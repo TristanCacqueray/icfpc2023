@@ -1,4 +1,4 @@
-module OurLib (someFunc) where
+module ProgCon (someFunc) where
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"
