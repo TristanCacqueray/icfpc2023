@@ -28,5 +28,5 @@ jobs:
             ${{ runner.os }}-${{ matrix.ghc }}-
             ${{ runner.os }}-
       - run: cabal update
-      - run: cabal build
-      - run: cabal sdist
+      - run: cabal build all
+      - run: cabal sdist all
