@@ -2,9 +2,8 @@
 
 module Main (main) where
 
-import qualified OurLib (someFunc)
+import qualified ProgCon (someFunc)
 
 main :: IO ()
 main = do
-  putStrLn "Hello, Haskell!"
-  OurLib.someFunc
+  ProgCon.someFunc
