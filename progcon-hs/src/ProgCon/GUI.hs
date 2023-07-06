@@ -2,78 +2,139 @@ module ProgCon.GUI where
 
 import Control.Monad.Managed (managed, managed_, runManaged)
 import Data.Vector.Storable qualified as SV
-import Data.Vector.Storable.Mutable qualified as V
+import DearImGui
 import DearImGui.OpenGL3 qualified
+import DearImGui.Raw qualified
 import DearImGui.SDL qualified
 import DearImGui.SDL.OpenGL qualified
+import GHC.Float (float2Double)
 import Graphics.GL qualified as GL
-import System.Environment (getArgs)
-import Witch (from)
-
-import Data.Coerce (coerce)
-import DearImGui
-import DearImGui.Raw qualified
 import RIO
 import SDL hiding (Texture, textureHeight, textureWidth)
-import SDL qualified
 
 import Data.Massiv.Array (Ix2 ((:.)), Sz (..))
 import Data.Massiv.Array qualified as Massiv
 import Data.Massiv.Array.IO (Image)
 import Data.Massiv.Array.Manifest (S, toStorableVector)
 import Foreign qualified
-import Foreign.C (CInt (..))
 import Graphics.ColorModel qualified as CM
-import Unsafe.Coerce (unsafeCoerce)
 
 import Numeric.Noise.Perlin qualified as Perlin
 
-renderNoise :: V2 Int -> Int -> Image S CM.RGB Word8
-renderNoise (V2 x y) seed = Massiv.makeArray (Massiv.ParN 0) (Sz (x :. y)) go
+-- | Helper method to create an image per pixel
+renderPixel :: V2 Int -> (Int -> Int -> CM.Pixel CM.RGB Word8) -> Image S CM.RGB Word8
+renderPixel (V2 x y) draw = Massiv.makeArray (Massiv.ParN 0) (Sz (x :. y)) go
   where
-    go (i Massiv.:. j) =
-        let v = Perlin.noiseValue perlinNoise (fromIntegral i, fromIntegral j, 0)
-            uv = round (v * 255)
-         in CM.PixelRGB uv uv uv
-    octaves = 5
-    scale = 0.05
+    go (i :. j) = draw i j
+
+-- | A demo UI to edit a noise texture
+data NoiseControllers = NoiseControllers
+    { name :: Text
+    , seed :: Controller
+    , octaves :: Controller
+    , scale :: Controller
+    , depth :: Controller
+    }
+
+-- | The UI definition
+noiseGui :: Scene (NoiseControllers, Texture)
+noiseGui =
+    Scene
+        { sceneInit = do
+            controllers <-
+                NoiseControllers "perlin"
+                    <$> newSliderInt "seed" 1
+                    <*> newSliderInt "octaves" 2
+                    <*> newSliderFloat "scales" 0.05 0.5
+                    <*> newSliderFloat "depth" 0 42
+            texture <- loadImage (renderPixel imgSize (\_ _ -> CM.PixelRGB 0 0 0))
+            renderTexture controllers texture
+            pure (controllers, texture)
+        , sceneHandle = \(_controllers, _textures) _ev -> pure ()
+        , sceneRender = \(controllers, texture) -> do
+            withFullscreen do
+                text $ "progcon - " <> controllers.name
+                DearImGui.plotLines "samples" [sin (x / 10) | x <- [0 .. 64]]
+                drawTexture texture
+                DearImGui.sameLine
+                whenM (renderController controllers.seed) do
+                    renderTexture controllers texture
+                DearImGui.sameLine
+                whenM (renderController controllers.octaves) do
+                    renderTexture controllers texture
+                DearImGui.sameLine
+                whenM (renderController controllers.scale) do
+                    renderTexture controllers texture
+                DearImGui.sameLine
+                whenM (renderController controllers.depth) do
+                    renderTexture controllers texture
+        }
+  where
+    renderTexture :: NoiseControllers -> Texture -> IO ()
+    renderTexture controllers texture = do
+        seed <- readControllerInt controllers.seed
+        octaves <- readControllerInt controllers.octaves
+        scale <- float2Double <$> readControllerFloat controllers.scale
+        depth <- float2Double <$> readControllerFloat controllers.depth
+        putStrLn $ "Regen noise with " <> show seed
+        let perlinNoise = Perlin.perlin seed octaves scale persistance
+            draw x y =
+                let i = fromIntegral x
+                    j = fromIntegral y
+                    v = Perlin.noiseValue perlinNoise (i, j, depth)
+                    uv = round (v * 255)
+                 in CM.PixelRGB uv uv uv
+
+        loadData (renderPixel imgSize draw) texture
     persistance = 0.5
-    perlinNoise = Perlin.perlin seed octaves scale persistance
+
+    imgSize = V2 500 500
+
+data Scene a = Scene
+    { sceneInit :: IO a
+    -- ^ Setup globals and textures
+    , sceneHandle :: a -> SDL.Event -> IO ()
+    -- ^ Handle keyboard and mouse events
+    , sceneRender :: a -> IO ()
+    -- ^ Render dear-imgui interface
+    }
 
 main :: IO ()
-main = do
-    usage
+main = runScene noiseGui
 
-    initializeAll
+----------------------------------------
+-- Controller helpers
+----------------------------------------
+newSliderInt :: Text -> Int -> IO Controller
+newSliderInt name v = SliderInt name (0) 12 <$> newIORef v
 
-    let keyHandler event
-            | isQuit = pure True
-            | otherwise = pure False
-          where
-            keyCode = case eventPayload event of
-                KeyboardEvent ke | ke.keyboardEventKeyMotion == Pressed -> Just ke.keyboardEventKeysym.keysymScancode
-                _ -> Nothing
-            isQuit =
-                SDL.eventPayload event == SDL.QuitEvent
-                    || keyCode == Just ScancodeEscape
+newSliderFloat :: Text -> Float -> Float -> IO Controller
+newSliderFloat name v maxValue = SliderFloat name (0) maxValue <$> newIORef v
 
-    let imgSize = V2 500 500
+readControllerInt :: Controller -> IO Int
+readControllerInt = \case
+    SliderInt _ _ _ ref -> readIORef ref
+    SliderFloat _ _ _ ref -> round <$> readIORef ref
 
-    let withTexture cb = do
-            txt <- loadImage (renderNoise imgSize 1)
-            cb txt
+readControllerFloat :: Controller -> IO Float
+readControllerFloat = \case
+    SliderInt _ _ _ ref -> fromIntegral <$> readIORef ref
+    SliderFloat _ _ _ ref -> readIORef ref
 
-    seedValue <- newIORef 1
-    mainGUI keyHandler withTexture \txt -> do
-        withFullscreen do
-            text "progcon demo"
-            DearImGui.plotLines "samples" [sin (x / 10) | x <- [0 .. 64]]
-            whenM (DearImGui.sliderInt "seed" seedValue 1 42) do
-                seed <- readIORef seedValue
-                putStrLn $ "Regen noise with " <> show seed
-                loadData (renderNoise imgSize seed) txt
-            drawTexture txt
+renderController :: Controller -> IO Bool
+renderController = \case
+    SliderInt name minValue maxValue ref -> DearImGui.vSliderInt name sz ref minValue maxValue
+    SliderFloat name minValue maxValue ref -> DearImGui.vSliderFloat name sz ref minValue maxValue
+  where
+    sz = DearImGui.ImVec2 10 500
 
+data Controller
+    = SliderInt Text Int Int (IORef Int)
+    | SliderFloat Text Float Float (IORef Float)
+
+----------------------------------------
+-- Texture helpers
+----------------------------------------
 data Texture = Texture
     { textureID :: GL.GLuint
     , textureWidth :: GL.GLsizei
@@ -149,28 +210,40 @@ drawTexture texture =
   where
     openGLtextureID = Foreign.intPtrToPtr $ fromIntegral texture.textureID
 
-usage :: IO ()
-usage =
-    getArgs >>= \case
-        [] -> pure ()
-        _ -> error "usage: progcon-gui"
+----------------------------------------
+-- Engine
+----------------------------------------
+runScene :: Scene a -> IO ()
+runScene scene = do
+    initializeAll
 
--- sdl bootstrap adapted from the dear-imgui readme.
-mainGUI :: (Event -> IO Bool) -> _ -> (_ -> IO ()) -> IO ()
-mainGUI eventHandler withTextures renderUI = do
+    let keyHandler resources event
+            | isQuit = pure True
+            | otherwise = do
+                scene.sceneHandle resources event
+                pure False
+          where
+            keyCode = case eventPayload event of
+                KeyboardEvent ke | ke.keyboardEventKeyMotion == Pressed -> Just ke.keyboardEventKeysym.keysymScancode
+                _ -> Nothing
+            isQuit =
+                SDL.eventPayload event == SDL.QuitEvent
+                    || keyCode == Just ScancodeEscape
+
     runManaged do
         window <- do
-            let title = "simple-dsp-demo"
+            let title = "ProgCon.Gui"
             let config = defaultWindow{windowGraphicsContext = OpenGLContext defaultOpenGL}
             managed $ bracket (createWindow title config) destroyWindow
         glContext <- managed $ bracket (glCreateContext window) glDeleteContext
         _ <- managed $ bracket createContext destroyContext
         _ <- managed_ $ bracket_ (DearImGui.SDL.OpenGL.sdl2InitForOpenGL window glContext) DearImGui.SDL.sdl2Shutdown
         _ <- managed_ $ bracket_ DearImGui.OpenGL3.openGL3Init DearImGui.OpenGL3.openGL3Shutdown
-        liftIO $ withTextures \textures -> mainLoop window (renderUI textures) eventHandler
+        resources <- liftIO scene.sceneInit
+        liftIO $ mainLoop window (keyHandler resources) (scene.sceneRender resources)
 
-mainLoop :: Window -> IO () -> (Event -> IO Bool) -> IO ()
-mainLoop window renderUI eventHandler = unlessQuit do
+mainLoop :: Window -> (Event -> IO Bool) -> IO () -> IO ()
+mainLoop window eventHandler renderUI = fix \loop -> do
     DearImGui.OpenGL3.openGL3NewFrame
     DearImGui.SDL.sdl2NewFrame
     DearImGui.newFrame
@@ -179,8 +252,6 @@ mainLoop window renderUI eventHandler = unlessQuit do
     DearImGui.render
     DearImGui.OpenGL3.openGL3RenderDrawData =<< getDrawData
     SDL.glSwapWindow window
-    mainLoop window renderUI eventHandler
-  where
-    unlessQuit action = do
-        shouldQuit <- traverse eventHandler =<< DearImGui.SDL.pollEventsWithImGui
-        unless (or shouldQuit) action
+
+    shouldQuits <- traverse eventHandler =<< DearImGui.SDL.pollEventsWithImGui
+    unless (or shouldQuits) loop
