@@ -23,10 +23,10 @@ If the program fails with:
 SDLCallFailed {sdlExceptionCaller = "SDL.Video.glCreateContext", sdlFunction = "SDL_GL_CreateContext", sdlExceptionError = "Invalid window"}
 ```
 
-You need to use `nixGL`. To install the right version (see hspkgs input to match the nixpkgs pin):
+You need to use `nixGL`. To install the right version (see nixpkgs input to match the nixpkgs pin):
 
 ```ShellSession
-nix profile install --override-input nixpkgs github:NixOS/nixpkgs/22c5bd85d8478e24874ff2b80875506f5c3711a6 --impure github:guibou/nixGL
+nix profile install --override-input nixpkgs github:NixOS/nixpkgs/3176a8460ff51d1fa223e2962b11bd85543a36ba --impure github:guibou/nixGL
 ```
 
 Then run:
