@@ -76,6 +76,7 @@ library
                      , sdl2 < 3
                      , dear-imgui < 3
                      , gl < 2
+                     , hsnoise < 2
 
   exposed-modules:     ProgCon
                      , ProgCon.Eval
