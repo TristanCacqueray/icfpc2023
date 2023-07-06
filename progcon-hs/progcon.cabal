@@ -65,6 +65,7 @@ library
                      , managed < 2
                      , mtl < 3
                      , transformers < 2
+                     , text < 3
                      , witch < 2
                        -- image
                      , vector < 2
@@ -75,6 +76,7 @@ library
                        -- drawing
                      , sdl2 < 3
                      , dear-imgui < 3
+                     , StateVar
                      , gl < 2
                      , hsnoise < 2
 
