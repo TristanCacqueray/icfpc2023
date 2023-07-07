@@ -1,4 +1,4 @@
-module ProgCon.Eval (score) where
+module ProgCon.Eval (scoreHappiness) where
 
 import Data.Vector.Unboxed qualified as UV
 import Data.Vector.Unboxed ((!))
@@ -9,9 +9,9 @@ attendeeHappiness :: UV.Vector Int -> Solution -> Attendee -> Int
 attendeeHappiness instruments solution attendee = UV.sum $ UV.imap musicianImpact solution.solutionPlacements
   where
     musicianImpact :: Int -> (Float, Float) -> Int
-    musicianImpact musician placement
+    musicianImpact !musician placement
       | isBlocked = 0
-      | otherwise = ceiling $ (1_000_000 * taste) / distance
+      | otherwise = ceiling $! (1_000_000 * taste) / distance
      where
        -- the musician's instrument
        instrument = instruments ! musician
@@ -39,5 +39,5 @@ attendeeHappiness instruments solution attendee = UV.sum $ UV.imap musicianImpac
 calcDistance :: Attendee -> (Float, Float) -> Float
 calcDistance attendee (px, py) = (attendee.attendeeX - px) ** 2 + (attendee.attendeeY - py) ** 2
 
-score :: Problem -> Solution -> Float
-score problem solution = fromIntegral $ sum $ map (attendeeHappiness problem.problemMusicians solution) problem.problemAttendees
+scoreHappiness :: Problem -> Solution -> Int
+scoreHappiness problem solution = sum $ map (attendeeHappiness problem.problemMusicians solution) problem.problemAttendees

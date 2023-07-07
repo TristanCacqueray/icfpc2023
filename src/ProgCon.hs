@@ -11,17 +11,17 @@ import ProgCon.Syntax
 import ProgCon.GUI
 import ProgCon.Solve
 
-mainCheck :: FilePath -> FilePath -> IO Float
+mainCheck :: FilePath -> FilePath -> IO Int
 mainCheck problemPath solutionPath = do
   problem <- loadJSON @Problem problemPath
   solution <- loadJSON @Solution solutionPath
-  pure (score problem solution)
+  pure (scoreHappiness problem solution)
 
 mainSolve :: FilePath -> IO ()
 mainSolve problemPath = do
   problem <- loadJSON @Problem problemPath
-  let gen = runRand (generateSolution problem)
-  writeSolution gen.solution
+  solution <- solve problem
+  writeSolution solution
 
 mainRender :: FilePath -> IO ()
 mainRender problemPath = do
@@ -30,7 +30,7 @@ mainRender problemPath = do
   putStrLn $ "room: " <> show (problem.problemRoomWidth, problem.problemRoomHeight)
   putStrLn $ "stage: " <> show (problem.problemStageWidth, problem.problemStageHeight)
   putStrLn $ "stagePos: " <> show problem.problemStageBottomLeft
-  let solution = (runRand (generateSolution problem)).solution
+  solution <- solve problem
   renderProblem problem solution
 
 mainTest :: IO ()
