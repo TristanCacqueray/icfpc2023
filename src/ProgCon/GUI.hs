@@ -4,6 +4,9 @@ import Graphics.Gloss
 
 import ProgCon.Syntax
 
+attendeeSize :: Float
+attendeeSize = 3
+
 drawProblem :: Problem -> Picture
 drawProblem problem = Pictures (room : stage : attendees)
   where
@@ -13,7 +16,7 @@ drawProblem problem = Pictures (room : stage : attendees)
     topX = -1 * problem.problemRoomWidth / 2
     topY = problem.problemRoomHeight / 2
     attendees = map drawAttendee problem.problemAttendees
-    drawAttendee attendee = Translate (topX + attendee.attendeesX) (topY - attendee.attendeesY) $ Circle 20
+    drawAttendee attendee = Translate (topX + attendee.attendeesX) (topY - attendee.attendeesY) $ Circle attendeeSize
     stage =
         Translate
             (topX + problem.problemStageWidth / 2 + stageX)
