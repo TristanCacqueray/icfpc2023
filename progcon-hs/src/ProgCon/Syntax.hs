@@ -2,19 +2,19 @@ module ProgCon.Syntax where
 
 data Attendees = Attendees
     { attendeesTastes :: [Int]
-    , attendeesX :: Int
-    , attendeesY :: Int
+    , attendeesX :: Float
+    , attendeesY :: Float
     }
     deriving (Show, Eq, Ord)
 
 data Problem = Problem
-    { problemStageHeight :: Int
-    , problemStageWidth :: Int
+    { problemStageHeight :: Float
+    , problemStageWidth :: Float
     , problemMusicians :: [Int]
-    , problemRoomHeight :: Int
+    , problemRoomHeight :: Float
+    , problemRoomWidth :: Float
     , problemAttendees :: [Attendees]
-    , problemStageBottomLeft :: [Int]
-    , problemRoomWidth :: Int
+    , problemStageBottomLeft :: (Float, Float)
     }
     deriving (Show, Eq, Ord)
 
@@ -24,7 +24,7 @@ data Solution = Solution
     deriving (Show, Eq, Ord)
 
 data Placements = Placements
-    { placementsX :: Int
-    , placementsY :: Int
+    { placementsX :: Float
+    , placementsY :: Float
     }
     deriving (Show, Eq, Ord)

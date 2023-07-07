@@ -61,26 +61,8 @@ library
                        -- base enhancement
                      , aeson < 3
                      , bytestring < 3
-                     , rio < 2
-                     , lens < 6
-                     , unliftio < 2
-                     , managed < 2
-                     , mtl < 3
-                     , transformers < 2
                      , text < 3
-                     , witch < 2
-                       -- image
-                     , vector < 2
-                     , massiv < 2
-                     , massiv-io < 2
-                     , Color < 2
-                     , JuicyPixels < 4
-                       -- drawing
-                     , sdl2 < 3
-                     , dear-imgui < 3
-                     , StateVar
-                     , gl < 2
-                     , hsnoise < 2
+                     , gloss < 2
 
   exposed-modules:     ProgCon
                      , ProgCon.Eval
