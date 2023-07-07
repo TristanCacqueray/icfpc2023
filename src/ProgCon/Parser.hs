@@ -30,11 +30,11 @@ instance ToJSON Solution where
             [ "placements" .= solutionPlacements
             ]
 
-instance ToJSON Placements where
-    toJSON Placements{..} =
+instance ToJSON Placement where
+    toJSON Placement{..} =
         object
-            [ "x" .= placementsX
-            , "y" .= placementsY
+            [ "x" .= placementX
+            , "y" .= placementY
             ]
 
 instance FromJSON Solution where
@@ -46,22 +46,22 @@ instance FromJSON Solution where
             "parsing Solution failed, "
             (typeMismatch "Object" invalid)
 
-instance FromJSON Placements where
+instance FromJSON Placement where
     parseJSON (Object v) = do
-        placementsX <- v .: "x"
-        placementsY <- v .: "y"
-        pure $ Placements{..}
+        placementX <- v .: "x"
+        placementY <- v .: "y"
+        pure $ Placement{..}
     parseJSON invalid = do
         prependFailure
-            "parsing Placements failed, "
+            "parsing Placement failed, "
             (typeMismatch "Object" invalid)
 
-instance ToJSON Attendees where
-    toJSON Attendees{..} =
+instance ToJSON Attendee where
+    toJSON Attendee{..} =
         object
-            [ "tastes" .= attendeesTastes
-            , "x" .= attendeesX
-            , "y" .= attendeesY
+            [ "tastes" .= attendeeTastes
+            , "x" .= attendeeX
+            , "y" .= attendeeY
             ]
 
 instance ToJSON Problem where
@@ -76,15 +76,15 @@ instance ToJSON Problem where
             , "room_width" .= problemRoomWidth
             ]
 
-instance FromJSON Attendees where
+instance FromJSON Attendee where
     parseJSON (Object v) = do
-        attendeesTastes <- v .: "tastes"
-        attendeesX <- v .: "x"
-        attendeesY <- v .: "y"
-        pure $ Attendees{..}
+        attendeeTastes <- v .: "tastes"
+        attendeeX <- v .: "x"
+        attendeeY <- v .: "y"
+        pure $ Attendee{..}
     parseJSON invalid = do
         prependFailure
-            "parsing Attendees failed, "
+            "parsing Attendee failed, "
             (typeMismatch "Object" invalid)
 
 instance FromJSON Problem where
