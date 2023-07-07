@@ -1,15 +1,10 @@
 # JKRT-2023
 
-```ShellSession
-# Hot reload the interface
-ghcid --command "cabal repl progcon" -W --test ProgCon.GUI.main
-```
-
 ## nix
 
 ```ShellSession
 # Start a dev env
-nix develop -c ghcid --command "cabal repl progcon"
+nix develop -c ghcid
 
 # Run the tool
 nix run
