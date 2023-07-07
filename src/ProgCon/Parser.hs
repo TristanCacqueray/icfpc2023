@@ -4,7 +4,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Generated with http://json-to-haskell.chrispenner.ca/
-module ProgCon.Parser (loadProblem, writeSolution) where
+module ProgCon.Parser (loadJSON, writeSolution) where
 
 import ProgCon.Syntax
 
@@ -12,9 +12,10 @@ import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, (.:), (.=))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types (prependFailure, typeMismatch)
 import Data.ByteString.Lazy qualified as BSL
+import Data.Vector.Unboxed qualified as VU
 
-loadProblem :: FilePath -> IO Problem
-loadProblem fp =
+loadJSON :: FromJSON a => FilePath -> IO a
+loadJSON fp =
     Aeson.eitherDecodeFileStrict fp >>= \case
         Right m -> pure m
         Left e -> error $ fp <> ": aeson error: " <> e
@@ -27,13 +28,22 @@ writeSolution solution = do
 instance ToJSON Solution where
     toJSON Solution{..} =
         object
-            [ "placements" .= solutionPlacements
+            [ "placements" .= map toObj (VU.toList solutionPlacements)
             ]
+      where
+        toObj (x, y) = object ["x" .= x, "y" .= y]
 
 instance FromJSON Solution where
     parseJSON (Object v) = do
-        solutionPlacements <- v .: "placements"
+        arr <- v .: "placements"
+        solutionPlacements <- VU.fromList <$> traverse fromObj arr
         pure $ Solution{..}
+      where
+        fromObj (Object obj) = (,) <$> obj .: "x" <*> obj .: "y"
+        fromObj invalid = do
+            prependFailure
+                "parsing Solution placement failed, "
+                (typeMismatch "Object" invalid)
     parseJSON invalid = do
         prependFailure
             "parsing Solution failed, "
