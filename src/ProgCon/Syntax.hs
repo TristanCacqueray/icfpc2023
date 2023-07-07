@@ -1,7 +1,9 @@
 module ProgCon.Syntax where
 
+import Data.Vector.Unboxed qualified as UV
+
 data Attendee = Attendee
-    { attendeeTastes :: [Int]
+    { attendeeTastes :: UV.Vector Float
     , attendeeX :: Float
     , attendeeY :: Float
     }
@@ -10,21 +12,15 @@ data Attendee = Attendee
 data Problem = Problem
     { problemStageHeight :: Float
     , problemStageWidth :: Float
-    , problemMusicians :: [Int]
+    , problemMusicians :: UV.Vector Int
     , problemRoomHeight :: Float
     , problemRoomWidth :: Float
     , problemAttendees :: [Attendee]
     , problemStageBottomLeft :: (Float, Float)
     }
-    deriving (Show, Eq, Ord)
+    deriving (Eq, Ord)
 
 data Solution = Solution
-    { solutionPlacements :: [Placement]
+    { solutionPlacements :: UV.Vector (Float, Float)
     }
-    deriving (Show, Eq, Ord)
-
-data Placement = Placement
-    { placementX :: Float
-    , placementY :: Float
-    }
-    deriving (Show, Eq, Ord)
+    deriving (Eq, Ord)

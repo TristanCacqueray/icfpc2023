@@ -58,11 +58,11 @@ executable progcon
 library
   import:              common
   build-depends:       base < 5
-                       -- base enhancement
                      , aeson < 3
                      , bytestring < 3
-                     , text < 3
                      , gloss < 2
+                     , text < 3
+                     , vector < 3
 
   exposed-modules:     ProgCon
                      , ProgCon.Eval
