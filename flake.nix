@@ -9,10 +9,7 @@
       pkgs = import nixpkgs { system = "x86_64-linux"; };
 
       haskellExtend = hpFinal: hpPrev: {
-        progcon = hpPrev.callCabal2nix "progcon" "${self}/progcon-hs" { };
-
-        # relax bound: megaparsec >=9.0 && <9.3
-        dear-imgui = pkgs.haskell.lib.doJailbreak hpPrev.dear-imgui;
+        progcon = hpPrev.callCabal2nix "progcon" self { };
       };
       hsPkgs = pkgs.haskellPackages.extend haskellExtend;
 

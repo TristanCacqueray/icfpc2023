@@ -1,5 +1,11 @@
 # JKRT-2023
 
+Run the tool:
+
+```ShellSession
+cabal run progcon --  ./problems/problem-1.json
+```
+
 ## nix
 
 ```ShellSession
