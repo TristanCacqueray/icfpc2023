@@ -1,0 +1,4 @@
+packages: .
+
+-- https://github.com/metrix-ai/vector-shuffling/pull/4
+allow-newer: pkg:vector-shuffling

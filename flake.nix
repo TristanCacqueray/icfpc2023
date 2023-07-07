@@ -10,6 +10,7 @@
 
       haskellExtend = hpFinal: hpPrev: {
         progcon = hpPrev.callCabal2nix "progcon" self { };
+        vector-shuffling = pkgs.haskell.lib.doJailbreak hpPrev.vector-shuffling;
       };
       hsPkgs = pkgs.haskellPackages.extend haskellExtend;
 
