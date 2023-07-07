@@ -9,7 +9,7 @@ solve _ = Solution []
 
 main :: IO ()
 main = do
-  problem <- loadProblem "../problems/problem-1.json"
+  problem <- loadProblem "../problems/problem-10.json"
   putStrLn $ "musicians: "<> show (length problem.problemMusicians)
   putStrLn $ "room: " <> show (problem.problemRoomWidth, problem.problemRoomHeight)
   putStrLn $ "stage: " <> show (problem.problemStageWidth, problem.problemStageHeight)
