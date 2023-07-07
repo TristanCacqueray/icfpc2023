@@ -30,13 +30,6 @@ instance ToJSON Solution where
             [ "placements" .= solutionPlacements
             ]
 
-instance ToJSON Placement where
-    toJSON Placement{..} =
-        object
-            [ "x" .= placementX
-            , "y" .= placementY
-            ]
-
 instance FromJSON Solution where
     parseJSON (Object v) = do
         solutionPlacements <- v .: "placements"
@@ -44,16 +37,6 @@ instance FromJSON Solution where
     parseJSON invalid = do
         prependFailure
             "parsing Solution failed, "
-            (typeMismatch "Object" invalid)
-
-instance FromJSON Placement where
-    parseJSON (Object v) = do
-        placementX <- v .: "x"
-        placementY <- v .: "y"
-        pure $ Placement{..}
-    parseJSON invalid = do
-        prependFailure
-            "parsing Placement failed, "
             (typeMismatch "Object" invalid)
 
 instance ToJSON Attendee where
