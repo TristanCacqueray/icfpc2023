@@ -27,7 +27,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.ghc }}-
             ${{ runner.os }}-
-      - run: sudo apt install -y libgl-dev
+      - run: sudo apt install -y libgl-dev libglu1-mesa-dev
       - run: cabal update
       - run: cabal build all
       - run: cabal sdist all
