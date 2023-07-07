@@ -5,13 +5,13 @@ import Data.Vector.Unboxed ((!))
 
 import ProgCon.Syntax
 
-attendeeHappiness :: UV.Vector Int -> Solution -> Attendee -> Float
+attendeeHappiness :: UV.Vector Int -> Solution -> Attendee -> Int
 attendeeHappiness instruments solution attendee = UV.sum $ UV.imap musicianImpact solution.solutionPlacements
   where
-    musicianImpact :: Int -> (Float, Float) -> Float
+    musicianImpact :: Int -> (Float, Float) -> Int
     musicianImpact musician placement
       | isBlocked = 0
-      | otherwise = 1_000_000 * taste / (distance ** 2)
+      | otherwise = ceiling $ (1_000_000 * taste) / distance
      where
        -- the musician's instrument
        instrument = instruments ! musician
@@ -29,17 +29,15 @@ attendeeHappiness instruments solution attendee = UV.sum $ UV.imap musicianImpac
             -- See: https://mathworld.wolfram.com/Circle-LineIntersection.html
             let
               radius = 5
-              d = calcD attendee otherPlacement
-              discriment = radius ** 2 * otherDistance ** 2 - d ** 2
+              (px, py) = otherPlacement
+              (x1, y1) = (attendee.attendeeX - px, attendee.attendeeY - py)
+              (x2, y2) = (fst placement - px, snd placement - py)
+              d = x1 * y2 - x2 * y1
+              discriment = radius ** 2 * otherDistance - d ** 2
              in discriment >= 0
 
-calcD :: Attendee -> (Float, Float) -> Float
-calcD attendee (x2, y2) = x1 * y2 - x2 * y1
-  where
-    (x1, y1) = (attendee.attendeeX, attendee.attendeeY)
-
 calcDistance :: Attendee -> (Float, Float) -> Float
-calcDistance attendee (px, py) = sqrt ((attendee.attendeeX - px) ** 2 + (attendee.attendeeY - py) ** 2)
+calcDistance attendee (px, py) = (attendee.attendeeX - px) ** 2 + (attendee.attendeeY - py) ** 2
 
 score :: Problem -> Solution -> Float
-score problem solution = sum $ map (attendeeHappiness problem.problemMusicians solution) problem.problemAttendees
+score problem solution = fromIntegral $ sum $ map (attendeeHappiness problem.problemMusicians solution) problem.problemAttendees
