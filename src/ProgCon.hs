@@ -1,9 +1,11 @@
 module ProgCon (main) where
 
 import System.Environment (getArgs)
+import Control.Monad
 
 import Data.Vector.Unboxed qualified as UV
 
+import ProgCon.Eval
 import ProgCon.Parser
 import ProgCon.Syntax
 import ProgCon.GUI
@@ -11,19 +13,38 @@ import ProgCon.GUI
 solve :: Problem -> Solution
 solve _ = Solution mempty
 
-usage :: IO FilePath
-usage = getArgs >>= \case
-  [] -> pure "./problems/problem-10.json"
-  (x : _) -> pure x
+mainCheck :: FilePath -> FilePath -> IO Float
+mainCheck problemPath solutionPath = do
+  problem <- loadJSON @Problem problemPath
+  solution <- loadJSON @Solution solutionPath
+  pure (score problem solution)
 
-main :: IO ()
-main = do
-  fp <- usage
-  problem <- loadProblem fp
+mainSolve :: FilePath -> IO ()
+mainSolve problemPath = do
+  problem <- loadJSON @Problem problemPath
+  writeSolution (solve problem)
+
+mainRender :: FilePath -> IO ()
+mainRender problemPath = do
+  problem <- loadJSON @Problem problemPath
   putStrLn $ "musicians: "<> show (UV.length problem.problemMusicians)
   putStrLn $ "room: " <> show (problem.problemRoomWidth, problem.problemRoomHeight)
   putStrLn $ "stage: " <> show (problem.problemStageWidth, problem.problemStageHeight)
   putStrLn $ "stagePos: " <> show problem.problemStageBottomLeft
-
-  writeSolution (solve problem)
   renderProblem problem
+
+mainTest :: IO ()
+mainTest = do
+  res <- mainCheck "./problems/problem-spec.json" "./problems/solution-spec.json"
+  unless (res == 5343) do
+    error $ "Invalid spec score, expected 5343, got: "<> show res
+
+main :: IO ()
+main = do
+  getArgs >>= \case
+    [] -> mainSolve "./problems/problem-10.json"
+    ["test"] -> mainTest
+    ["render", fp] -> mainRender fp
+    ["solve", fp] -> mainSolve fp
+    ["check", problemPath, solutionPath] -> print =<< mainCheck problemPath solutionPath
+    _ -> error "usage: check pb solution | solve pb"
