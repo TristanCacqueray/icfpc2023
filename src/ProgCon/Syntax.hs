@@ -18,9 +18,9 @@ data Problem = Problem
     , problemAttendees :: [Attendee]
     , problemStageBottomLeft :: (Float, Float)
     }
-    deriving (Eq, Ord)
+    deriving (Show, Eq, Ord)
 
-data Solution = Solution
+newtype Solution = Solution
     { solutionPlacements :: UV.Vector (Float, Float)
     }
-    deriving (Eq, Ord)
+    deriving (Show, Eq, Ord)
