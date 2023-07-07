@@ -16,7 +16,7 @@ drawProblem problem = Pictures (room : stage : attendees)
     topX = -1 * problem.problemRoomWidth / 2
     topY = problem.problemRoomHeight / 2
     attendees = map drawAttendee problem.problemAttendees
-    drawAttendee attendee = Translate (topX + attendee.attendeesX) (topY - attendee.attendeesY) $ Circle attendeeSize
+    drawAttendee attendee = Translate (topX + attendee.attendeeX) (topY - attendee.attendeeY) $ Circle attendeeSize
     stage =
         Translate
             (topX + problem.problemStageWidth / 2 + stageX)
