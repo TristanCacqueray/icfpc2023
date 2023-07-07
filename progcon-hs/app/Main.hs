@@ -2,8 +2,8 @@
 
 module Main (main) where
 
-import qualified ProgCon (someFunc)
+import qualified ProgCon (main)
 
 main :: IO ()
 main = do
-  ProgCon.someFunc
+  ProgCon.main
