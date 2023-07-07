@@ -9,9 +9,7 @@ import ProgCon.Eval
 import ProgCon.Parser
 import ProgCon.Syntax
 import ProgCon.GUI
-
-solve :: Problem -> Solution
-solve _ = Solution mempty
+import ProgCon.Solve
 
 mainCheck :: FilePath -> FilePath -> IO Float
 mainCheck problemPath solutionPath = do
@@ -22,7 +20,8 @@ mainCheck problemPath solutionPath = do
 mainSolve :: FilePath -> IO ()
 mainSolve problemPath = do
   problem <- loadJSON @Problem problemPath
-  writeSolution (solve problem)
+  let gen = runRand (generateSolution problem)
+  writeSolution gen.solution
 
 mainRender :: FilePath -> IO ()
 mainRender problemPath = do
@@ -31,7 +30,8 @@ mainRender problemPath = do
   putStrLn $ "room: " <> show (problem.problemRoomWidth, problem.problemRoomHeight)
   putStrLn $ "stage: " <> show (problem.problemStageWidth, problem.problemStageHeight)
   putStrLn $ "stagePos: " <> show problem.problemStageBottomLeft
-  renderProblem problem
+  let solution = (runRand (generateSolution problem)).solution
+  renderProblem problem solution
 
 mainTest :: IO ()
 mainTest = do
@@ -44,7 +44,7 @@ main = do
   getArgs >>= \case
     [] -> mainSolve "./problems/problem-10.json"
     ["test"] -> mainTest
-    ["render", fp] -> mainRender fp
+    ["render", problemPath] -> mainRender problemPath
     ["solve", fp] -> mainSolve fp
     ["check", problemPath, solutionPath] -> print =<< mainCheck problemPath solutionPath
     _ -> error "usage: check pb solution | solve pb"

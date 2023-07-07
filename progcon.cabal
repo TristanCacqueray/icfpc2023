@@ -61,12 +61,15 @@ library
                      , aeson < 3
                      , bytestring < 3
                      , gloss < 2
-                     , text < 3
+                     , random < 3
+                     , MonadRandom < 3
                      , vector < 3
+                     , vector-shuffling < 3
 
   exposed-modules:     ProgCon
                      , ProgCon.Eval
                      , ProgCon.GUI
                      , ProgCon.Parser
+                     , ProgCon.Solve
                      , ProgCon.Syntax
   hs-source-dirs:      src
