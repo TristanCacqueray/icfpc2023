@@ -15,7 +15,7 @@ import ProgCon.Syntax
 import Say
 import Text.Printf (printf)
 
-solve :: String -> Problem -> IO (Int, Solution)
+solve :: Maybe (Int, Solution) -> String -> Problem -> IO (Int, Solution)
 solve = geneticSolve
 
 type RandGen a = RandT StdGen IO a
@@ -24,6 +24,8 @@ type RandGen a = RandT StdGen IO a
  in 'toSolution' we keep only the one for the active musician.
 -}
 newtype GenSolution = GenSolution (MV.IOVector (Float, Float))
+
+type SolutionScore = Int
 
 -- | Arranging the musicians in a grid, this function returns all the available placements.
 allSquarePlacement :: (Float, Float) -> [(Float, Float)]
@@ -39,9 +41,13 @@ toAbsPlacement problem (x, y) = (sx + x, sy + y)
   where
     (sx, sy) = problem.problemStageBottomLeft
 
-geneticSolve :: String -> Problem -> IO (Int, Solution)
-geneticSolve name problem = runRandGen do
-    initialSeeds <- replicateM seedCount (randomSolution problem placements)
+geneticSolve :: Maybe (SolutionScore, Solution) -> String -> Problem -> IO (Int, Solution)
+geneticSolve mPrevSolution name problem = runRandGen do
+    initialSeeds <- case mPrevSolution of
+        Just (prevScore, prevSolution) -> do
+            seed <- fromSolution prevSolution problem placements
+            pure [(prevScore, seed)]
+        Nothing -> replicateM seedCount (randomSolution problem placements)
     ((finalScore, finalSolution) : _) <- go genCount initialSeeds
     solution <- toSolution problem finalSolution
     pure (finalScore, solution)
@@ -54,7 +60,7 @@ geneticSolve name problem = runRandGen do
     total = length placements
     musicianCount = UV.length problem.problemMusicians
 
-    go :: Int -> [(Int, GenSolution)] -> RandGen [(Int, GenSolution)]
+    go :: Int -> [(SolutionScore, GenSolution)] -> RandGen [(SolutionScore, GenSolution)]
     go 0 !seeds = pure seeds
     go count !seeds = do
         -- Generate a new population
@@ -67,17 +73,18 @@ geneticSolve name problem = runRandGen do
                 _ -> minBound
         liftIO do
             now <- getCurrentTime
-            sayString $ printf "%s %s: gen %2d - %10d" (take 25 $ iso8601Show now) name count best
+            sayString $ printf "%s %s: gen %2d - %10d" (take 25 $ iso8601Show now) name (genCount - count) best
 
         -- Repeat the process, keeping only the best seed.
         go (count - 1) (take seedCount populationOrdered)
       where
-        breedNewSolutions :: (Int, GenSolution) -> RandGen [(Int, GenSolution)]
+        breedNewSolutions :: (SolutionScore, GenSolution) -> RandGen [(SolutionScore, GenSolution)]
         breedNewSolutions x@(_, s) = do
             newSolutions <- replicateM breedCount (makeNewSeed s)
             -- Keep the original seed
             pure (x : newSolutions)
 
+        -- Create a new solution based on the previous one
         makeNewSeed :: GenSolution -> RandGen (Int, GenSolution)
         makeNewSeed (GenSolution seedPlacements) = do
             newSolution <- GenSolution <$> MV.clone seedPlacements
@@ -85,6 +92,7 @@ geneticSolve name problem = runRandGen do
             score <- scoreSolution problem newSolution
             pure (score, newSolution)
 
+        -- Shuffle the musician placement randomly
         doMutate :: GenSolution -> RandGen ()
         doMutate (GenSolution iov) = do
             mutationCount <- getRandomR (genCount, MV.length iov `div` 5)
@@ -112,6 +120,17 @@ toSolution :: Problem -> GenSolution -> RandGen Solution
 toSolution problem (GenSolution iov) = do
     xs <- UV.convert <$> V.freeze iov
     pure $ Solution $ UV.take (UV.length problem.problemMusicians) xs
+
+fromSolution :: Solution -> Problem -> [(Float, Float)] -> RandGen GenSolution
+fromSolution solution problem xs = do
+    iov <- MV.generate (length xs) \pos ->
+        if pos < musicianCount
+            then solution.solutionPlacements UV.! pos -- re-use previous musician position
+            else otherPlacements UV.! (pos - musicianCount)
+    pure $ GenSolution iov
+  where
+    otherPlacements = UV.fromList [pos | pos <- xs, pos `UV.notElem` solution.solutionPlacements]
+    musicianCount = UV.length problem.problemMusicians
 
 -- | Compute the score of a 'GenSolution'.
 scoreSolution :: Problem -> GenSolution -> RandGen Int

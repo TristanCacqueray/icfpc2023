@@ -24,31 +24,41 @@ mainCheck problemPath solutionPath = do
 mainSolve :: FilePath -> IO ()
 mainSolve problemPath = do
     problem <- loadJSON @Problem problemPath
-    (score, solution) <- solve (takeBaseName problemPath) problem
+    (score, solution) <- solve Nothing (takeBaseName problemPath) problem
     putStrLn $ "Score: " <> show score
     writeSolution solution
 
 saveSolve :: FilePath -> IO ()
 saveSolve problemPath = do
-    sayString $ name <> ": starting..."
     prevScore <- do
         hasScore <- doesFileExist scorePath
         if hasScore
             then loadJSON @Int scorePath
             else pure minBound
     problem <- loadJSON @Problem problemPath
-    (score, solution) <- solve name problem
+    sayString $ name <> ": starting... musician count: " <> show (UV.length problem.problemMusicians)
+
+    prevSolution <- do
+        hasSolution <- doesFileExist solutionPath
+        if hasSolution
+            then do
+                solution <- loadJSON @Solution solutionPath
+                sayString $ name <> ": reloading from " <> solutionPath <> " (score: " <> show prevScore
+                pure (Just (prevScore, solution))
+            else pure Nothing
+
+    (score, solution) <- solve prevSolution name problem
     if score > prevScore
         then do
             sayString $ name <> ": new highscore: " <> show score
             Aeson.encodeFile scorePath score
-            let resultPath = problemPath <> ".solution.json"
-            Aeson.encodeFile resultPath solution
+            Aeson.encodeFile solutionPath solution
         else do
             sayString $ name <> ": score: " <> show score <> ", prev was: " <> show prevScore
   where
     name = takeBaseName problemPath
     scorePath = problemPath <> ".score"
+    solutionPath = problemPath <> ".solution.json"
 
 mainRender :: FilePath -> FilePath -> IO ()
 mainRender problemPath solutionPath = do
