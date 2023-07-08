@@ -63,26 +63,6 @@ instance FromJSON Solution where
             "parsing Solution failed, "
             (typeMismatch "Object" invalid)
 
-instance ToJSON Attendee where
-    toJSON Attendee{..} =
-        object
-            [ "tastes" .= attendeeTastes
-            , "x" .= attendeeX
-            , "y" .= attendeeY
-            ]
-
-instance ToJSON Problem where
-    toJSON Problem{..} =
-        object
-            [ "stage_height" .= problemStageHeight
-            , "stage_width" .= problemStageWidth
-            , "musicians" .= problemMusicians
-            , "room_height" .= problemRoomHeight
-            , "attendees" .= problemAttendees
-            , "stage_bottom_left" .= problemStageBottomLeft
-            , "room_width" .= problemRoomWidth
-            ]
-
 instance FromJSON Attendee where
     parseJSON (Object v) = do
         attendeeTastes <- v .: "tastes"
@@ -94,6 +74,16 @@ instance FromJSON Attendee where
             "parsing Attendee failed, "
             (typeMismatch "Object" invalid)
 
+instance FromJSON Pillar where
+    parseJSON (Object v) = do
+        pillarRadius <- v .: "radius"
+        pillarCenter <- v .: "center"
+        pure $ Pillar{..}
+    parseJSON invalid = do
+        prependFailure
+            "parsing Pillar failed, "
+            (typeMismatch "Object" invalid)
+
 instance FromJSON Problem where
     parseJSON (Object v) = do
         problemStageHeight <- v .: "stage_height"
@@ -103,6 +93,7 @@ instance FromJSON Problem where
         problemAttendees <- v .: "attendees"
         problemStageBottomLeft <- v .: "stage_bottom_left"
         problemRoomWidth <- v .: "room_width"
+        problemPillars <- v .: "pillars"
         pure $ Problem{..}
     parseJSON invalid = do
         prependFailure

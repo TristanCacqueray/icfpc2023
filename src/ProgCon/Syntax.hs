@@ -1,15 +1,15 @@
 module ProgCon.Syntax where
 
-import Data.Vector.Unboxed qualified as UV
-import Data.Vector.Mutable qualified as MV
 import Data.Aeson (ToJSON)
+import Data.Vector.Mutable qualified as MV
+import Data.Vector.Unboxed qualified as UV
 import Text.Printf (printf)
 
 newtype ProblemID = ProblemID Int
-  deriving newtype (Show, ToJSON)
+    deriving newtype (Show, ToJSON)
 
 problemBase :: ProblemID -> FilePath
-problemBase (ProblemID pid) =  "./problems/" <> printf "%02d" pid
+problemBase (ProblemID pid) = "./problems/" <> printf "%02d" pid
 
 problemPath :: ProblemID -> FilePath
 problemPath pid = problemBase pid <> "-problem.json"
@@ -20,12 +20,20 @@ solutionPath pid = problemBase pid <> "-solution.json"
 data ProblemDescription = ProblemDescription
     { name :: ProblemID
     , problem :: Problem
+    , -- a dense pillars representation using (x, y, radius)
+      pillars :: UV.Vector (Int, Int, Int)
     }
 
 data Attendee = Attendee
     { attendeeTastes :: UV.Vector Int
     , attendeeX :: Int
     , attendeeY :: Int
+    }
+    deriving (Show, Eq, Ord)
+
+data Pillar = Pillar
+    { pillarCenter :: (Int, Int)
+    , pillarRadius :: Int
     }
     deriving (Show, Eq, Ord)
 
@@ -37,21 +45,22 @@ data Problem = Problem
     , problemRoomWidth :: Int
     , problemAttendees :: [Attendee]
     , problemStageBottomLeft :: (Int, Int)
+    , problemPillars :: [Pillar]
     }
-    deriving (Show, Eq, Ord)
 
 {- | All the positions are stored, that way all the mutation happen in-place.
  in 'toSolution' we keep only the one for the active musician.
 -}
-newtype GenPlacements = GenPlacements { iov :: MV.IOVector (Int, Int) }
+newtype GenPlacements = GenPlacements {iov :: MV.IOVector (Int, Int)}
 
--- | The SolutionDescription contains all the initial placements so that it can be safely re-used in the solver.
--- To get the final solution, use "take musicianCount genPlacements"
+{- | The SolutionDescription contains all the initial placements so that it can be safely re-used in the solver.
+ To get the final solution, use "take musicianCount genPlacements"
+-}
 data SolutionDescription = SolutionDescription
-  { score :: Int
-  , musicianCount :: Int
-  , genPlacements :: GenPlacements
-  }
+    { score :: Int
+    , musicianCount :: Int
+    , genPlacements :: GenPlacements
+    }
 
 -- | This is the final solution representation to be submitted
 newtype Solution = Solution
