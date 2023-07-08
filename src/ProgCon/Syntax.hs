@@ -3,15 +3,19 @@ module ProgCon.Syntax where
 import Data.Vector.Unboxed qualified as UV
 import Data.Vector.Mutable qualified as MV
 import Data.Aeson (ToJSON)
+import Text.Printf (printf)
 
 newtype ProblemID = ProblemID Int
   deriving newtype (Show, ToJSON)
 
+problemBase :: ProblemID -> FilePath
+problemBase (ProblemID pid) =  "./problems/" <> printf "%02d" pid
+
 problemPath :: ProblemID -> FilePath
-problemPath n = "./problems/" <> show n <> "-problem.json"
+problemPath pid = problemBase pid <> "-problem.json"
 
 solutionPath :: ProblemID -> FilePath
-solutionPath n = "./problems/" <> show n <> "-solution.json"
+solutionPath pid = problemBase pid <> "-solution.json"
 
 data ProblemDescription = ProblemDescription
     { name :: ProblemID
