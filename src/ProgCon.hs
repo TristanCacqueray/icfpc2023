@@ -6,7 +6,6 @@ import Say
 import SimpleCmdArgs
 import System.Directory (doesFileExist)
 
-import Control.Concurrent.Async (mapConcurrently_)
 import ProgCon.API
 import ProgCon.Eval
 import ProgCon.GUI (renderProblem)
@@ -39,8 +38,8 @@ loadSolution pid = doesFileExist solutionFP >>= \case
   where
     solutionFP = solutionPath pid
 
-mainSolve :: ProblemID -> IO ()
-mainSolve pid = do
+mainSolve :: Bool -> ProblemID -> IO ()
+mainSolve autoSubmit pid = do
     mPrevSolution <- loadSolution pid
     problemDesc <- loadProblem pid
     let debug msg = sayString $ show problemDesc.name <> ": " <> msg
@@ -59,10 +58,14 @@ mainSolve pid = do
             when (solution.score > 0) do
               when (prevScore > minBound) do
                 debug $ "score: " ++ show prevScore ++ " -> " ++ show solution.score
-              submitOne False pid
+              when autoSubmit do
+                submitOne False pid
         | otherwise ->
             sayString $ show problemDesc.name <> ": done, not a highscore: " <> show solution.score <> ", prev was: " <> show prevScore
       Nothing -> sayString $ show problemDesc.name <> ": couldn't find a solution!"
+
+mainSolver :: Bool -> [ProblemID] -> IO ()
+mainSolver autoSubmit = mapM_ (mainSolve autoSubmit)
 
 mainRender :: FilePath -> FilePath -> IO ()
 mainRender problemFP solutionFP = do
@@ -88,9 +91,10 @@ main :: IO ()
 main =
   simpleCmdArgs Nothing "progcon" "musical concert" $
   subcommands
-  [ Subcommand "solve" "solve problem and submit if new highscore" $
-    mapConcurrently_ mainSolve
-    <$> some intArg
+  [ Subcommand "solve" "solve problem and --submit if new highscore" $
+    mainSolver
+    <$> switchLongWith "submit" "auto submit when done"
+    <*> some intArg
   , Subcommand "submit" "submit problem solution" $
     submitOne False
     <$> intArg
