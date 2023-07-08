@@ -1,6 +1,7 @@
 module ProgCon.Solve where
 
 import Control.Monad.Random.Strict
+import Data.Aeson qualified as Aeson
 import Data.Vector qualified as V
 import Data.Vector.Mutable qualified as MV
 import Data.Vector.Unboxed qualified as UV
@@ -11,11 +12,17 @@ import Data.List (sortOn)
 import Data.Time (getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import ProgCon.Eval
+import ProgCon.Parser ()
 import ProgCon.Syntax
 import Say
 import Text.Printf (printf)
 
-solve :: Maybe (Int, Solution) -> String -> Problem -> IO (Int, Solution)
+data ProblemDescription = ProblemDescription
+    { name :: String
+    , problemPaths :: Maybe (FilePath, FilePath)
+    }
+
+solve :: Maybe (Int, Solution) -> ProblemDescription -> Problem -> IO (Int, Solution)
 solve = geneticSolve
 
 type RandGen a = RandT StdGen IO a
@@ -30,8 +37,8 @@ type SolutionScore = Int
 -- | Arranging the musicians in a grid, this function returns all the available placements.
 allSquarePlacement :: (Float, Float) -> [(Float, Float)]
 allSquarePlacement (width, height) = do
-    x <- [0 .. width / (2 * radius) - 2]
-    y <- [0 .. height / (2 * radius) - 2]
+    x <- [0 .. width / (2 * radius) - 1]
+    y <- [0 .. height / (2 * radius) - 1]
     pure (radius + x * 2 * radius, radius + y * 2 * radius)
   where
     radius = 10
@@ -41,8 +48,8 @@ toAbsPlacement problem (x, y) = (sx + x, sy + y)
   where
     (sx, sy) = problem.problemStageBottomLeft
 
-geneticSolve :: Maybe (SolutionScore, Solution) -> String -> Problem -> IO (Int, Solution)
-geneticSolve mPrevSolution name problem = runRandGen do
+geneticSolve :: Maybe (SolutionScore, Solution) -> ProblemDescription -> Problem -> IO (Int, Solution)
+geneticSolve mPrevSolution desc problem = runRandGen do
     initialSeeds <- case mPrevSolution of
         Just (prevScore, prevSolution) -> do
             seed <- fromSolution prevSolution problem placements
@@ -68,12 +75,24 @@ geneticSolve mPrevSolution name problem = runRandGen do
 
         -- Order by score
         let populationOrdered = sortOn (\(score, _) -> negate score) population
-        let best = case populationOrdered of
-                (score, _) : _ -> score
+        let prevScore = case seeds of
+                (prevScore', _) : _ -> prevScore'
                 _ -> minBound
+        best <- case populationOrdered of
+            (score, solution) : _ -> do
+                when (score > prevScore) do
+                    case desc.problemPaths of
+                        Nothing -> pure ()
+                        Just (scorePath, solutionPath) -> do
+                            sayString $ desc.name <> ": new highscore: " <> show score <> ", saving: " <> solutionPath
+                            s <- toSolution problem solution
+                            liftIO $ Aeson.encodeFile scorePath score
+                            liftIO $ Aeson.encodeFile solutionPath s
+                pure score
+            _ -> pure minBound
         liftIO do
             now <- getCurrentTime
-            sayString $ printf "%s %s: gen %2d - %10d" (take 25 $ iso8601Show now) name (genCount - count) best
+            sayString $ printf "%s %s: gen %2d - %10d" (take 25 $ iso8601Show now) desc.name (genCount - count) best
 
         -- Repeat the process, keeping only the best seed.
         go (count - 1) (take seedCount populationOrdered)

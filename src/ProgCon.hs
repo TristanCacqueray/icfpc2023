@@ -24,9 +24,11 @@ mainCheck problemPath solutionPath = do
 mainSolve :: FilePath -> IO ()
 mainSolve problemPath = do
     problem <- loadJSON @Problem problemPath
-    (score, solution) <- solve Nothing (takeBaseName problemPath) problem
+    (score, solution) <- solve Nothing desc problem
     putStrLn $ "Score: " <> show score
     writeSolution solution
+  where
+    desc = ProblemDescription (takeBaseName problemPath) Nothing
 
 saveSolve :: FilePath -> IO ()
 saveSolve problemPath = do
@@ -36,29 +38,33 @@ saveSolve problemPath = do
             then loadJSON @Int scorePath
             else pure minBound
     problem <- loadJSON @Problem problemPath
-    sayString $ name <> ": starting... musician count: " <> show (UV.length problem.problemMusicians)
+    sayString $ desc.name <> ": starting... musician count: " <> show (UV.length problem.problemMusicians)
 
     prevSolution <- do
         hasSolution <- doesFileExist solutionPath
         if hasSolution
             then do
                 solution <- loadJSON @Solution solutionPath
-                sayString $ name <> ": reloading from " <> solutionPath <> " (score: " <> show prevScore
+                sayString $ desc.name <> ": reloading from " <> solutionPath <> " (score: " <> show prevScore
                 pure (Just (prevScore, solution))
             else pure Nothing
 
-    (score, solution) <- solve prevSolution name problem
+    (score, solution) <- solve prevSolution desc problem
     if score > prevScore
         then do
-            sayString $ name <> ": new highscore: " <> show score
+            sayString $ desc.name <> ": new highscore: " <> show score
             Aeson.encodeFile scorePath score
             Aeson.encodeFile solutionPath solution
         else do
-            sayString $ name <> ": score: " <> show score <> ", prev was: " <> show prevScore
+            sayString $ desc.name <> ": score: " <> show score <> ", prev was: " <> show prevScore
   where
-    name = takeBaseName problemPath
     scorePath = problemPath <> ".score"
     solutionPath = problemPath <> ".solution.json"
+    desc =
+        ProblemDescription
+            { name = takeBaseName problemPath
+            , problemPaths = Just (scorePath, solutionPath)
+            }
 
 mainRender :: FilePath -> FilePath -> IO ()
 mainRender problemPath solutionPath = do
