@@ -35,6 +35,18 @@ submit problem solution = do
     putStrLn $ "The status code was: " ++ (show $ statusCode $ responseStatus response)
     print $ responseBody response
 
+submitOne :: Int -> IO ()
+submitOne pos = do
+    let fp = solutionPath pos
+    hasSolution <- doesFileExist fp
+    when hasSolution do
+        putStrLn $ "Go " <> fp
+        solution <- loadJSON @Solution fp
+        submit pos solution
+
+solutionPath :: Int -> FilePath
+solutionPath pos = "./problems/problem-" <> show pos <> ".json.solution.json"
+
 submits :: IO ()
 submits = traverse_ trySubmit [1 .. 55]
   where
@@ -42,10 +54,4 @@ submits = traverse_ trySubmit [1 .. 55]
     trySubmit :: Int -> IO ()
     trySubmit pos
         | pos `elem` skip = pure ()
-        | otherwise = do
-            let solutionPath = "./problems/problem-" <> show pos <> ".json.solution.json"
-            hasSolution <- doesFileExist solutionPath
-            when hasSolution do
-                putStrLn $ "Go " <> solutionPath
-                solution <- loadJSON @Solution solutionPath
-                submit pos solution
+        | otherwise = submitOne pos
