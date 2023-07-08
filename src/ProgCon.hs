@@ -14,25 +14,19 @@ import ProgCon.Solve
 import ProgCon.Syntax
 import ProgCon.Submit
 
-mainCheck :: FilePath -> FilePath -> IO ()
-mainCheck problemFP solutionFP =
-  runCheck problemFP solutionFP >>= print
+mainCheck :: ProblemID -> FilePath -> IO ()
+mainCheck pid solutionFP =
+  runCheck pid solutionFP >>= print
 
-runCheck ::  FilePath -> FilePath -> IO Int
-runCheck problemFP solutionFP = do
-    problem <- loadJSON @Problem problemFP
+runCheck ::  ProblemID -> FilePath -> IO Int
+runCheck pid solutionFP = do
+    problemDesc <- loadProblem pid
     solutionDesc <- loadSolutionPath solutionFP
     solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
-    pure (scoreHappiness problem solution)
+    pure (scoreHappiness problemDesc solution)
 
 loadProblem :: ProblemID -> IO ProblemDescription
-loadProblem pid = do
-  problem <- loadJSON @Problem (problemPath pid)
-  let pillars = UV.fromList (map toDensePillar problem.problemPillars)
-  pure $ ProblemDescription pid problem pillars
- where
-   toDensePillar :: Pillar -> (Int, Int, Int)
-   toDensePillar (Pillar (px, py) radius) = (px, py, radius)
+loadProblem pid = loadProblemPath pid (problemPath pid)
 
 loadSolution :: ProblemID -> IO (Maybe SolutionDescription)
 loadSolution pid = doesFileExist solutionFP >>= \case
@@ -73,23 +67,24 @@ mainSolve autoSubmit pid = do
 mainSolver :: Bool -> [ProblemID] -> IO ()
 mainSolver autoSubmit = mapM_ (mainSolve autoSubmit)
 
-mainRender :: FilePath -> FilePath -> IO ()
-mainRender problemFP solutionFP = do
-    problem <- loadJSON @Problem problemFP
+mainRender :: ProblemID -> FilePath -> IO ()
+mainRender pid solutionFP = do
+    problemDesc <- loadProblem pid
+    let problem = problemDesc.problem
     solutionDesc <- loadSolutionPath solutionFP
     solution <- toSolution (UV.length problem.problemMusicians) solutionDesc.genPlacements
     putStrLn $ "musicians: " <> show (UV.length problem.problemMusicians)
     putStrLn $ "room: " <> show (problem.problemRoomWidth, problem.problemRoomHeight)
     putStrLn $ "stage: " <> show (problem.problemStageWidth, problem.problemStageHeight)
     putStrLn $ "stagePos: " <> show problem.problemStageBottomLeft
-    let score = scoreHappiness problem solution
+    let score = scoreHappiness problemDesc solution
     putStrLn $ "Score: " <> show score
-    renderProblem problem solution
+    renderProblem problemDesc.problem solution
 
 -- FIXME merge into check
 mainTest :: IO ()
 mainTest = do
-    res <- runCheck "./problems/spec-problem.json" "./problems/spec-solution.json"
+    res <- runCheck SpecProblem "./problems/spec-solution.json"
     unless (res == 5343) do
         error $ "Invalid spec score, expected 5343, got: " <> show res
 
@@ -106,11 +101,11 @@ main =
     <$> intArg
   , Subcommand "score" "compute a solution score" $
     mainCheck
-    <$> strArg "PROBLEM"
+    <$> intArg
     <*> strArg "SOLUTION"
   , Subcommand "render" "start GUI to visualize the problem and solution" $
     mainRender
-    <$> strArg "PROBLEM"
+    <$> intArg
     <*> strArg "SOLUTION"
   , Subcommand "test" "run unit-test" $
     pure mainTest

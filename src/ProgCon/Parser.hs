@@ -4,7 +4,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Generated with http://json-to-haskell.chrispenner.ca/
-module ProgCon.Parser (loadJSON, loadSolutionPath, saveSolutionPath) where
+module ProgCon.Parser (loadProblemPath, loadSolutionPath, saveSolutionPath) where
 
 import ProgCon.Syntax
 
@@ -12,6 +12,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, (.:), (.=))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types (prependFailure, typeMismatch)
 import Data.Vector qualified as V
+import Data.Vector.Unboxed qualified as UV
 import Data.Vector.Unboxed qualified as VU
 import Say (sayString)
 
@@ -20,6 +21,15 @@ loadJSON fp =
     Aeson.eitherDecodeFileStrict fp >>= \case
         Right m -> pure m
         Left e -> error $ fp <> ": aeson error: " <> e
+
+loadProblemPath :: ProblemID -> FilePath -> IO ProblemDescription
+loadProblemPath pid fp = do
+    problem <- loadJSON @Problem fp
+    let pillars = UV.fromList (map toDensePillar problem.problemPillars)
+    pure $ ProblemDescription pid problem pillars
+  where
+    toDensePillar :: Pillar -> (Int, Int, Int)
+    toDensePillar (Pillar (px, py) radius) = (px, py, radius)
 
 -- | loadSolutionPath deserialize json array into MV.IOVector
 loadSolutionPath :: FilePath -> IO SolutionDescription

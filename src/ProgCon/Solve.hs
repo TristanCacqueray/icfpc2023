@@ -46,9 +46,9 @@ geneticSolve mPrevSolution problemDesc
     | otherwise = runRandGen do
         initialSeeds <- case mPrevSolution of
             Just solution -> do
-                newSeeds <- replicateM (seedCount - 1) (randomSolution problem placements)
+                newSeeds <- replicateM (seedCount - 1) (randomSolution problemDesc placements)
                 pure $ solution : newSeeds
-            Nothing -> replicateM seedCount (randomSolution problem placements)
+            Nothing -> replicateM seedCount (randomSolution problemDesc placements)
         (newSolution : _) <- go genCount initialSeeds
         pure (Just newSolution)
   where
@@ -97,7 +97,7 @@ geneticSolve mPrevSolution problemDesc
         makeNewSeed sd = do
             genPlacements <- GenPlacements <$> MV.clone sd.genPlacements.iov
             doMutate genPlacements
-            score <- scoreSolution problem genPlacements
+            score <- scoreSolution problemDesc genPlacements
             pure SolutionDescription{score, musicianCount, genPlacements}
 
         -- Shuffle the musician placement randomly
@@ -113,15 +113,15 @@ geneticSolve mPrevSolution problemDesc
                 MV.swap iov musician swapPos
 
 -- | Create a random solution.
-randomSolution :: Problem -> [(Grid, Grid)] -> RandGen SolutionDescription
-randomSolution problem xs = do
+randomSolution :: ProblemDescription -> [(Grid, Grid)] -> RandGen SolutionDescription
+randomSolution problemDesc xs = do
     iov <- V.thaw (V.fromList xs)
     liftRandT \stdg -> do
         newstdg <- stToIO $ shuffle iov stdg
         pure ((), newstdg)
     let genPlacements = GenPlacements iov
-        musicianCount = UV.length problem.problemMusicians
-    score <- scoreSolution problem genPlacements
+        musicianCount = UV.length problemDesc.problem.problemMusicians
+    score <- scoreSolution problemDesc genPlacements
     pure (SolutionDescription{score, musicianCount, genPlacements})
 
 -- | Create the 'Solution' data from a 'GenPlacements'.
@@ -131,10 +131,10 @@ toSolution musicianCount (GenPlacements iov) = do
     pure $ Solution $ UV.take musicianCount xs
 
 -- | Compute the score of a 'GenPlacements'.
-scoreSolution :: Problem -> GenPlacements -> RandGen Int
-scoreSolution problem gs = do
-    solution <- liftIO (toSolution (UV.length problem.problemMusicians) gs)
-    pure $ scoreHappiness problem solution
+scoreSolution :: ProblemDescription -> GenPlacements -> RandGen Int
+scoreSolution problemDesc gs = do
+    solution <- liftIO (toSolution (UV.length problemDesc.problem.problemMusicians) gs)
+    pure $ scoreHappiness problemDesc solution
 
 -- | Helper to run the MonadRandom.
 runRandGen :: RandGen a -> IO a
