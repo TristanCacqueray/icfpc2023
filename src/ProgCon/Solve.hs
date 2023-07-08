@@ -29,38 +29,62 @@ type Grid = Int
 allGridPlacement :: (Grid, Grid) -> [(Grid, Grid)]
 allGridPlacement (width, height) = go radius radius []
   where
+    -- go takes the current (x, y) position, and the list of accumulated position
     go :: Grid -> Grid -> [(Grid, Grid)] -> [(Grid, Grid)]
     go x y !acc =
-        let newAcc = (x, y) : acc
+        let -- store the current pos in the accumulator
+            newAcc = (x, y) : acc
          in if
-                    | x + r3 < width -> go (x + r2) y newAcc
-                    | y + r3 < height -> go radius (y + r2) newAcc
-                    | otherwise -> newAcc
-    r3 = r2 + radius
-    r2 = radius * 2
+                    | -- there is room to fit another musician on this line
+                      x + r3 < width ->
+                        go (x + r2) y newAcc
+                    | -- there is room to fit another line
+                      y + r3 < height ->
+                        go radius (y + r2) newAcc
+                    | -- this is the end
+                      otherwise ->
+                        newAcc
     radius = 10
+    -- the diamater:   ( -r- o -r- )
+    r2 = radius * 2
+    -- r3 is the distance from the current position + a whole new musician
+    -- e.g:     o -r- )( -r- o -r-)|
+    r3 = r2 + radius
 
 -- | Arranging the musicians in a grid, this function returns all the available placements.
 allPackedPlacement :: (Grid, Grid) -> [(Grid, Grid)]
 allPackedPlacement (width, height) = go 0 radius radius []
   where
     go
-        | width > height = goLine
-        | otherwise = goCol
+        | -- do the offset per line
+          width > height =
+            goLine
+        | -- do the offset per column
+          otherwise =
+            goCol
+
     goLine :: Int -> Grid -> Grid -> [(Grid, Grid)] -> [(Grid, Grid)]
     goLine line x y !acc =
         let newAcc = (x, y) : acc
+            -- we alternate the start position every two lines
             newX
                 | even line = r2
                 | otherwise = radius
          in if
-                    | x + r3 < width -> goLine line (x + r2) y newAcc
-                    | y + r3 < height -> goLine (line + 1) newX (y + newOffset) newAcc
-                    | otherwise -> newAcc
+                    | -- there is room to fit another musician on this line
+                      x + r3 < width ->
+                        goLine line (x + r2) y newAcc
+                    | -- there is room to fit another line
+                      y + r3 < height ->
+                        goLine (line + 1) newX (y + newOffset) newAcc
+                    | -- this is the end
+                      otherwise ->
+                        newAcc
 
     goCol :: Int -> Grid -> Grid -> [(Grid, Grid)] -> [(Grid, Grid)]
     goCol col x y !acc =
         let newAcc = (x, y) : acc
+            -- we alternate the start position every two columns
             newY
                 | even col = r2
                 | otherwise = radius
