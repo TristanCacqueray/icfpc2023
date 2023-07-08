@@ -21,6 +21,18 @@ cabal run progcon -- test
 cabal run -O2 progcon -- save ./problems/problem-[0-9]*.json
 ```
 
+Submit from the REPL:
+
+```ShellSession
+$ export ICFP_TOKEN=....
+$ cabal repl
+# Submit one
+λ> ProgCon.Submit.submit 55 =<< loadJSON @Solution "./problems/problem-55.json.solution.json"
+
+# re-submit all
+λ> ProgCon.Submit.submits
+```
+
 ## nix
 
 ```ShellSession
