@@ -56,7 +56,7 @@ scoreBoard = do
       case lookupKey "scoreboard" obj of
         Nothing -> putStrLn "no scoreboard data"
         Just (arr :: [Object]) ->
-          mapM_ printScore arr
+          mapM_ printScore $ zip [1..] arr
   where
     ranking :: Object -> Maybe (Int,String)
     ranking obj = do
@@ -64,8 +64,8 @@ scoreBoard = do
       name <- lookupKey "username" obj
       return (score,name)
 
-    printScore obj =
+    printScore (i :: Int, obj) =
       case ranking obj of
         Nothing -> return ()
         Just (score,name) ->
-          putStrLn $ show score ++ " " ++ name
+          putStrLn $ show i ++ ". " ++ show score ++ " " ++ name
