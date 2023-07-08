@@ -36,7 +36,7 @@ attendeeHappiness instruments solution attendee = UV.sum $ UV.imap musicianImpac
               (x2, y2) = (fst placement - px, snd placement - py)
               d = x1 * y2 - x2 * y1
               discriment = radius * radius * otherDistance - d * d
-             in discriment >= 0
+             in discriment > 0
 
 calcDistance :: Attendee -> (Int, Int) -> Int
 calcDistance attendee (px, py) = (attendee.attendeeX - px) ^ (2 :: Int) + (attendee.attendeeY - py) ^ (2 :: Int)
