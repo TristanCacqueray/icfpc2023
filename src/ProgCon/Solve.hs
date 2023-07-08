@@ -30,8 +30,8 @@ type SolutionScore = Int
 -- | Arranging the musicians in a grid, this function returns all the available placements.
 allSquarePlacement :: (Float, Float) -> [(Float, Float)]
 allSquarePlacement (width, height) = do
-    x <- [0 .. width / (2 * radius) - radius]
-    y <- [0 .. height / (2 * radius) - radius]
+    x <- [0 .. width / (2 * radius) - 2]
+    y <- [0 .. height / (2 * radius) - 2]
     pure (radius + x * 2 * radius, radius + y * 2 * radius)
   where
     radius = 10
