@@ -26,7 +26,13 @@ runCheck problemFP solutionFP = do
     pure (scoreHappiness problem solution)
 
 loadProblem :: ProblemID -> IO ProblemDescription
-loadProblem pid = ProblemDescription pid <$> loadJSON @Problem (problemPath pid)
+loadProblem pid = do
+  problem <- loadJSON @Problem (problemPath pid)
+  let pillars = UV.fromList (map toDensePillar problem.problemPillars)
+  pure $ ProblemDescription pid problem pillars
+ where
+   toDensePillar :: Pillar -> (Int, Int, Int)
+   toDensePillar (Pillar (px, py) radius) = (px, py, radius)
 
 loadSolution :: ProblemID -> IO (Maybe SolutionDescription)
 loadSolution pid = doesFileExist solutionFP >>= \case
