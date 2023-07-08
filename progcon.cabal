@@ -62,11 +62,11 @@ library
   build-depends:       base < 5
                      , MonadRandom < 3
                      , aeson < 3
-                     , async
+                     --, async
                      , bytestring < 3
                      , directory < 3
                      , extra
-                     , filepath
+                     --, filepath
                      , gloss < 2
                      , http-client
                      , http-client-tls
