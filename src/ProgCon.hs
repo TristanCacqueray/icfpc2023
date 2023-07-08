@@ -113,6 +113,8 @@ main =
     pure submitAll
   , Subcommand "userboard" "get userboard data" $
     pure userBoard
+  , Subcommand "scoreboard" "get scoreboard data" $
+    pure scoreBoard
   ]
   where
     intArg :: Parser ProblemID
