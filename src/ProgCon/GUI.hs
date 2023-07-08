@@ -3,13 +3,15 @@ module ProgCon.GUI where
 import Data.Vector.Unboxed qualified as UV
 import GHC.Float (int2Float)
 import Graphics.Gloss hiding (scale)
-import Graphics.Gloss.Interface.IO.Animate qualified as GlossIO
+import Graphics.Gloss.Interface.IO.Display qualified as GlossIO
 import RIO hiding (display)
 
-import Control.Concurrent (forkIO)
 import ProgCon.Syntax
 
-newtype ProblemRenderer = ProblemRenderer (IORef (Maybe Picture))
+data ProblemRenderer = ProblemRenderer
+    { pictureRef :: IORef (Maybe Picture)
+    , controller :: GlossIO.Controller
+    }
 
 withRenderer :: (ProblemRenderer -> IO ()) -> IO ()
 withRenderer cb = do
@@ -19,8 +21,18 @@ withRenderer cb = do
             mPicture <- readIORef pictureRef
             pure $ fromMaybe (Text "Loading...") mPicture
 
-    GlossIO.animateIO disp bg (const makePicture) \_controller -> do
-        cb (ProblemRenderer pictureRef)
+    backendVar <- newEmptyMVar
+
+    let runGloss :: IO ()
+        runGloss = GlossIO.displayIO disp bg makePicture (putMVar backendVar)
+
+    let runSolver :: IO ()
+        runSolver = do
+            backend <- takeMVar backendVar
+            cb (ProblemRenderer pictureRef backend)
+
+    withAsync runGloss \_ -> do
+        runSolver
   where
     disp = InWindow "ICFP Contest 2023" (winX, winY) (10, 10)
     bg = makeColor 0.6 0.6 0.6 1.0
@@ -29,15 +41,14 @@ winX, winY :: Int
 (winX, winY) = (1024, 1024)
 
 renderProblem :: MonadIO m => Problem -> Solution -> ProblemRenderer -> m ()
-renderProblem problem solution (ProblemRenderer pref) = do
+renderProblem problem solution renderer = do
     let scale
             | problem.problemRoomHeight > problem.problemRoomWidth =
                 fromIntegral winY / fromIntegral problem.problemRoomHeight
             | otherwise = fromIntegral problem.problemRoomWidth / fromIntegral winX
         pscale = scale * 0.98
-    writeIORef pref $ Just $ Scale pscale pscale $ drawProblem problem solution
-
--- liftIO controller.controllerSetRedraw
+    writeIORef renderer.pictureRef $ Just $ Scale pscale pscale $ drawProblem problem solution
+    liftIO renderer.controller.controllerSetRedraw
 
 attendeeSize :: Float
 attendeeSize = 3
