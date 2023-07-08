@@ -91,6 +91,18 @@ mainTest = do
     unless (res == 5343) do
         error $ "Invalid spec score, expected 5343, got: " <> show res
 
+mainPlacements :: ProblemID -> IO ()
+mainPlacements pid = withRenderer \renderer -> do
+    problemDesc <- loadProblem pid
+    let problem = problemDesc.problem
+        dim = (problem.problemStageWidth, problem.problemStageHeight)
+        placements = toAbsPlacement problem <$> maximumPlacements dim
+        setMaxMusician pd = pd{problem=pd.problem{problemMusicians = UV.replicate (length placements) 0}}
+    putStrLn $ "total placements: " <> show (length placements)
+    solutionDesc <- runRandGen $ randomSolution (setMaxMusician problemDesc) placements
+    solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
+    renderProblem problemDesc.problem solution renderer
+
 main :: IO ()
 main =
   simpleCmdArgs Nothing "progcon" "musical concert" $
@@ -107,6 +119,9 @@ main =
     mainCheck
     <$> intArg
     <*> strArg "SOLUTION"
+  , Subcommand "placements" "draw fake placements" $
+    mainPlacements
+    <$> intArg
   , Subcommand "render" "start GUI to visualize the problem and solution" $
     mainRender
     <$> intArg
