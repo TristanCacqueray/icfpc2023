@@ -4,15 +4,16 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Generated with http://json-to-haskell.chrispenner.ca/
-module ProgCon.Parser (loadJSON, writeSolution) where
+module ProgCon.Parser (loadJSON, loadSolutionPath, saveSolutionPath) where
 
 import ProgCon.Syntax
 
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, (.:), (.=))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types (prependFailure, typeMismatch)
-import Data.ByteString.Lazy qualified as BSL
+import Data.Vector qualified as V
 import Data.Vector.Unboxed qualified as VU
+import Say (sayString)
 
 loadJSON :: FromJSON a => FilePath -> IO a
 loadJSON fp =
@@ -20,10 +21,23 @@ loadJSON fp =
         Right m -> pure m
         Left e -> error $ fp <> ": aeson error: " <> e
 
-writeSolution :: Solution -> IO ()
-writeSolution solution = do
-    BSL.putStr (Aeson.encode solution)
-    BSL.putStr "\n"
+-- | loadSolutionPath deserialize json array into MV.IOVector
+loadSolutionPath :: FilePath -> IO SolutionDescription
+loadSolutionPath fp = do
+    -- NOTE: Keep this tuple in sync with the 'saveSolutionPath'
+    (score, musicianCount, placements) <- loadJSON fp
+    iov <- V.thaw placements
+    let genPlacements = GenPlacements iov
+    pure $ SolutionDescription{score, musicianCount, genPlacements}
+
+-- | saveSolutionPath serialize MV.IOVector into json array
+saveSolutionPath :: SolutionDescription -> FilePath -> IO ()
+saveSolutionPath solutionDesc fp = do
+    arr <- V.freeze solutionDesc.genPlacements.iov
+    -- NOTE: Keep this tuple in sync with the 'loadSolutionPath'
+    let tup = (solutionDesc.score, solutionDesc.musicianCount, arr)
+    Aeson.encodeFile fp tup
+    sayString $ fp <> ": saved"
 
 instance ToJSON Solution where
     toJSON Solution{..} =
