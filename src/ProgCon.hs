@@ -35,8 +35,8 @@ mainSolve problemPath = do
   where
     desc = ProblemDescription (takeBaseName problemPath) Nothing
 
-saveSolve :: FilePath -> IO ()
-saveSolve problemPath = do
+saveSolve :: Int -> IO ()
+saveSolve pos = do
     prevScore <- do
         hasScore <- doesFileExist scorePath
         if hasScore
@@ -63,6 +63,8 @@ saveSolve problemPath = do
         else do
             sayString $ desc.name <> ": done, not a highscore: " <> show score <> ", prev was: " <> show prevScore
   where
+    problemPath :: FilePath
+    problemPath = "./problems/problem-" <> show pos <> ".json"
     scorePath = problemPath <> ".score"
     solutionPath = problemPath <> ".solution.json"
     desc =
@@ -99,7 +101,7 @@ main =
     <$> strArg "FILE"
   , Subcommand "save" "genetic solve and saving problems" $
     mapConcurrently_ saveSolve
-    <$> some (strArg "FILE")
+    <$> some (intArg)
   , Subcommand "check" "check problem solution" $
     mainCheck
     <$> strArg "PROBLEM"
@@ -112,16 +114,10 @@ main =
     pure mainTest
   , Subcommand "submit" "submit problem solution" $
     submitOne False
-    <$> argumentWith auto "NUM"
+    <$> intArg
   , Subcommand "submit-all" "submit all solutions" $
     pure submitAll
   ]
-      --  [] -> mainSolve "./problems/problem-10.json"
---        ["submit", n] -> submitOne (read n)
---        ["submits"] -> submitAll
---        ["test"] -> mainTest
---        ["render", problemPath, solutionPath] -> mainRender problemPath solutionPath
-      --  ["solve", fp] -> mainSolve fp
-      --  "save" : xs -> mapConcurrently_ saveSolve xs
-      --   ["check", problemPath, solutionPath] -> print =<< mainCheck problemPath solutionPath
---        _ -> error "usage: check pb solution | solve pb"
+  where
+    intArg :: Parser Int
+    intArg = argumentWith auto "NUM"
