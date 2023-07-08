@@ -1,5 +1,6 @@
-# Fix the formating:
+# Fetch a problem:
 
 ```ShellSession
-echo -e $(cat ~/Downloads/icfp/problem-1.json) | sed -e 's/\\"/"/g'  -e 's/^"//' -e 's/"$//' | jq -cr > problem-1.json
+PB=18
+curl https://api.icfpcontest.com/problem?problem_id=$PB | jq '.Success | fromjson' -cr > ./problems/problem-$PB.json
 ```
