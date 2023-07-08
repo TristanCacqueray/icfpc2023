@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternSynonyms #-}
+
 module ProgCon.Syntax where
 
 import Data.Aeson (ToJSON)
@@ -8,7 +10,11 @@ import Text.Printf (printf)
 newtype ProblemID = ProblemID Int
     deriving newtype (Show, ToJSON)
 
+pattern SpecProblem :: ProblemID
+pattern SpecProblem = ProblemID 0
+
 problemBase :: ProblemID -> FilePath
+problemBase SpecProblem = "./problems/spec"
 problemBase (ProblemID pid) = "./problems/" <> printf "%02d" pid
 
 problemPath :: ProblemID -> FilePath
