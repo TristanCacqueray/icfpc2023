@@ -1,22 +1,21 @@
 module ProgCon.Solve where
 
-import Control.Monad.Random.Strict (RandT, evalRandT, liftRandT, mkStdGen)
+import Control.Monad.Random.Strict
 import Data.Vector qualified as V
 import Data.Vector.Mutable qualified as MV
 import Data.Vector.Unboxed qualified as UV
-import System.Random (StdGen)
 import VectorShuffling.Mutable (shuffle)
 
-import Control.Monad (replicateM, replicateM_)
-import Control.Monad.IO.Class (MonadIO (..))
-import Control.Monad.Random (MonadRandom (getRandomR))
 import Control.Monad.ST (stToIO)
 import Data.List (sortOn)
+import Data.Time (getCurrentTime)
+import Data.Time.Format.ISO8601 (iso8601Show)
 import ProgCon.Eval
 import ProgCon.Syntax
+import Say
 import Text.Printf (printf)
 
-solve :: Problem -> IO Solution
+solve :: String -> Problem -> IO (Int, Solution)
 solve = geneticSolve
 
 type RandGen a = RandT StdGen IO a
@@ -37,11 +36,12 @@ toAbsPlacement problem (x, y) = (sx + x, sy + y)
   where
     (sx, sy) = problem.problemStageBottomLeft
 
-geneticSolve :: Problem -> IO Solution
-geneticSolve problem = runRand do
+geneticSolve :: String -> Problem -> IO (Int, Solution)
+geneticSolve name problem = runRandGen do
     initialSeeds <- replicateM seedCount (randomSolution problem placements)
-    (finalSolutions : _) <- go 10 initialSeeds
-    toSolution problem (snd finalSolutions)
+    ((finalScore, finalSolution) : _) <- go 10 initialSeeds
+    solution <- toSolution problem finalSolution
+    pure (finalScore, solution)
   where
     seedCount = 10
     breedCount = 10
@@ -51,8 +51,8 @@ geneticSolve problem = runRand do
     count = UV.length problem.problemMusicians
 
     go :: Int -> [(Int, GenSolution)] -> RandGen [(Int, GenSolution)]
-    go !0 !seeds = pure seeds
-    go !epoch !seeds = do
+    go 0 !seeds = pure seeds
+    go epoch !seeds = do
         -- Generate a new population
         population <- concat <$> traverse mutate seeds
 
@@ -61,7 +61,9 @@ geneticSolve problem = runRand do
         let best = case population of
                 (x, _) : _ -> x
                 _ -> 0
-        liftIO $ putStrLn $ printf "epoch %2d: %010d" epoch best
+        liftIO do
+            now <- getCurrentTime
+            sayString $ printf "%s %s: epoch %2d - %10d" (take 25 $ iso8601Show now) name epoch best
 
         -- Repeat the process, keeping only the best seed.
         go (epoch - 1) (take seedCount populationOrdered)
@@ -108,5 +110,8 @@ scoreSolution problem gs = do
     pure $ scoreHappiness problem solution
 
 -- | Helper to run the MonadRandom.
-runRand :: RandGen a -> IO a
-runRand action = evalRandT action (mkStdGen 42)
+runRandGen :: RandGen a -> IO a
+-- runRandGen action = evalRandT action (mkStdGen 42)
+runRandGen action = do
+    stdg <- initStdGen
+    evalRandT action stdg
