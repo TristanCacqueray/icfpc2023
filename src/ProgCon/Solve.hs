@@ -26,13 +26,61 @@ type RandGen a = RandT StdGen IO a
 type Grid = Int
 
 -- | Arranging the musicians in a grid, this function returns all the available placements.
-allSquarePlacement :: (Grid, Grid) -> [(Grid, Grid)]
-allSquarePlacement (width, height) = do
-    x <- [0 .. width `div` (2 * radius) - 1]
-    y <- [0 .. height `div` (2 * radius) - 1]
-    pure (radius + x * 2 * radius, radius + y * 2 * radius)
+allGridPlacement :: (Grid, Grid) -> [(Grid, Grid)]
+allGridPlacement (width, height) = go radius radius []
   where
+    go :: Grid -> Grid -> [(Grid, Grid)] -> [(Grid, Grid)]
+    go x y !acc =
+        let newAcc = (x, y) : acc
+         in if
+                    | x + r3 < width -> go (x + r2) y newAcc
+                    | y + r3 < height -> go radius (y + r2) newAcc
+                    | otherwise -> newAcc
+    r3 = r2 + radius
+    r2 = radius * 2
     radius = 10
+
+-- | Arranging the musicians in a grid, this function returns all the available placements.
+allPackedPlacement :: (Grid, Grid) -> [(Grid, Grid)]
+allPackedPlacement (width, height) = go 0 radius radius []
+  where
+    go
+        | width > height = goLine
+        | otherwise = goCol
+    goLine :: Int -> Grid -> Grid -> [(Grid, Grid)] -> [(Grid, Grid)]
+    goLine line x y !acc =
+        let newAcc = (x, y) : acc
+            newX
+                | even line = r2
+                | otherwise = radius
+         in if
+                    | x + r3 < width -> goLine line (x + r2) y newAcc
+                    | y + r3 < height -> goLine (line + 1) newX (y + newOffset) newAcc
+                    | otherwise -> newAcc
+
+    goCol :: Int -> Grid -> Grid -> [(Grid, Grid)] -> [(Grid, Grid)]
+    goCol col x y !acc =
+        let newAcc = (x, y) : acc
+            newY
+                | even col = r2
+                | otherwise = radius
+         in if
+                    | y + r3 < height -> goCol col x (y + r2) newAcc
+                    | x + r3 < width -> goCol (col + 1) (x + newOffset) newY newAcc
+                    | otherwise -> newAcc
+
+    newOffset = 19
+    r3 = r2 + radius
+    r2 = radius * 2
+    radius = 10
+
+maximumPlacements :: (Grid, Grid) -> [(Grid, Grid)]
+maximumPlacements dim
+    | length packed > length grid = packed
+    | otherwise = grid
+  where
+    packed = allPackedPlacement dim
+    grid = allGridPlacement dim
 
 toAbsPlacement :: Problem -> (Grid, Grid) -> (Grid, Grid)
 toAbsPlacement problem (x, y) = (sx + x, sy + y)
@@ -58,7 +106,7 @@ geneticSolve mRenderer mPrevSolution problemDesc
     seedCount = 10
     breedCount = 10
     dim = (problem.problemStageWidth, problem.problemStageHeight)
-    placements = toAbsPlacement problem <$> allSquarePlacement dim
+    placements = toAbsPlacement problem <$> maximumPlacements dim
     total = length placements
     musicianCount = UV.length problem.problemMusicians
     problem = problemDesc.problem
