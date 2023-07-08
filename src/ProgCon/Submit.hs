@@ -81,7 +81,7 @@ waitFor sid = do
 
 submitOne :: Int -> IO ()
 submitOne pos = do
-    let fp = solutionPath pos
+    let fp = solutionPath
     hasSolution <- doesFileExist fp
     when hasSolution do
         putStrLn $ "Go " <> fp
@@ -89,9 +89,9 @@ submitOne pos = do
         submit pos solution >>= \case
             Just sid -> print sid >> waitFor sid
             Nothing -> pure ()
-
-solutionPath :: Int -> FilePath
-solutionPath pos = "./problems/problem-" <> show pos <> ".json.solution.json"
+  where
+    solutionPath :: FilePath
+    solutionPath = "./problems/problem-" <> show pos <> ".json.solution.json"
 
 submitAll :: IO ()
 submitAll = traverse_ trySubmit [1 .. 55]
