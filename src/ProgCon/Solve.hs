@@ -6,17 +6,19 @@ import Data.Vector.Mutable qualified as MV
 import Data.Vector.Unboxed qualified as UV
 import VectorShuffling.Mutable (shuffle)
 
+import Control.Concurrent
 import Control.Monad.ST (stToIO)
 import Data.List (sortOn)
 import Data.Time (getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import ProgCon.Eval
+import ProgCon.GUI
 import ProgCon.Parser (saveSolutionPath)
 import ProgCon.Syntax
 import Say
 import Text.Printf (printf)
 
-solve :: Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
+solve :: Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
 solve = geneticSolve
 
 type RandGen a = RandT StdGen IO a
@@ -37,8 +39,8 @@ toAbsPlacement problem (x, y) = (sx + x, sy + y)
   where
     (sx, sy) = problem.problemStageBottomLeft
 
-geneticSolve :: Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
-geneticSolve mPrevSolution problemDesc
+geneticSolve :: Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
+geneticSolve mRenderer mPrevSolution problemDesc
     | total < musicianCount = do
         -- mapM_ print (allSquarePlacement padding dim)
         sayString $ "Impossible square placement: " <> show dim <> ", for " <> show musicianCount <> " total: " <> show total
@@ -52,9 +54,9 @@ geneticSolve mPrevSolution problemDesc
         (newSolution : _) <- go genCount initialSeeds
         pure (Just newSolution)
   where
-    genCount = 20
-    seedCount = 8
-    breedCount = 12
+    genCount = 10
+    seedCount = 10
+    breedCount = 10
     dim = (problem.problemStageWidth, problem.problemStageHeight)
     placements = toAbsPlacement problem <$> allSquarePlacement dim
     total = length placements
@@ -76,12 +78,21 @@ geneticSolve mPrevSolution problemDesc
             sd : _ -> do
                 when (sd.score > prevScore) do
                     sayString $ show problemDesc.name <> ": new highscore: " <> show sd.score <> ", saving..."
-                    liftIO $ saveSolutionPath sd (solutionPath problemDesc.name)
+                    -- enable when scoring works properly!
+                    when False do
+                        liftIO $ saveSolutionPath sd (solutionPath problemDesc.name)
+                    forM_ mRenderer \renderer -> liftIO do
+                        solution <- toSolution musicianCount sd.genPlacements
+                        renderProblem problem solution renderer
                 pure sd.score
             _ -> pure minBound
         liftIO do
             now <- getCurrentTime
             sayString $ printf "%s %s: gen %2d - %10d" (take 25 $ iso8601Show now) (show problemDesc.name) (genCount - count + 1) best
+
+        when True do
+            -- FIX: without this delay, the gloss ui is not refreshing :/
+            liftIO $ threadDelay 1_000_000
 
         -- Repeat the process, keeping only the best seed.
         go (count - 1) (take seedCount populationOrdered)
