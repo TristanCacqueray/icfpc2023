@@ -68,6 +68,8 @@ library
                      , gloss < 2
                      , http-client
                      , http-client-tls
+                     , http-conduit
+                     , http-query
                      , http-types
                      , say
                      , simple-cmd-args
@@ -77,6 +79,7 @@ library
                      , vector-shuffling < 3
 
   exposed-modules:     ProgCon
+                     , ProgCon.API
                      , ProgCon.Eval
                      , ProgCon.GUI
                      , ProgCon.Parser
