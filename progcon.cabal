@@ -51,7 +51,7 @@ executable progcon
   main-is:             Main.hs
   other-modules:       Paths_progcon
   hs-source-dirs:      app
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-T
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -with-rtsopts=-qg -with-rtsopts=-xn -with-rtsopts=-A128m
   build-depends:       base < 5,
                        progcon
 
@@ -59,12 +59,17 @@ library
   import:              common
   build-depends:       base < 5
                      , aeson < 3
+                     , directory < 3
                      , bytestring < 3
                      , gloss < 2
-                     , random < 3
                      , MonadRandom < 3
                      , vector < 3
                      , vector-shuffling < 3
+
+                     , filepath
+                     , say
+                     , async
+                     , time
 
   exposed-modules:     ProgCon
                      , ProgCon.Eval
