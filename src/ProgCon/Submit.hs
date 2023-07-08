@@ -4,7 +4,6 @@ import Data.Aeson
 import Data.ByteString.Lazy qualified as BSL
 import Data.Text (pack)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Data.Text.Lazy (toStrict)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types.Status (statusCode)
@@ -36,9 +35,10 @@ submit problem solution = do
     print $ responseBody response
 
 submits :: IO ()
-submits = traverse_ trySubmit [1 :: Int .. 55]
+submits = traverse_ trySubmit [1 .. 55]
   where
     skip = [30, 39, 2, 51]
+    trySubmit :: Int -> IO ()
     trySubmit pos
         | pos `elem` skip = pure ()
         | otherwise = do
