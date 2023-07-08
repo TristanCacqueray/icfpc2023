@@ -8,10 +8,12 @@ import ProgCon.Syntax
 attendeeHappiness :: UV.Vector Int -> Solution -> Attendee -> Int
 attendeeHappiness instruments solution attendee = UV.sum $ UV.imap musicianImpact solution.solutionPlacements
   where
-    musicianImpact :: Int -> (Float, Float) -> Int
+    musicianImpact :: Int -> (Int, Int) -> Int
     musicianImpact !musician placement
       | isBlocked = 0
-      | otherwise = ceiling $! (1_000_000 * taste) / distance
+      | otherwise =
+        let (d,m) = (1_000_000 * taste) `divMod` distance
+        in d + if m > 0 then 1 else 0
      where
        -- the musician's instrument
        instrument = instruments ! musician
@@ -21,23 +23,23 @@ attendeeHappiness instruments solution attendee = UV.sum $ UV.imap musicianImpac
        distance = calcDistance attendee placement
        -- is the musician blocked by another musician?
        isBlocked = UV.any checkBlocked solution.solutionPlacements
-       checkBlocked :: (Float, Float) -> Bool
+       checkBlocked :: (Int, Int) -> Bool
        checkBlocked otherPlacement = otherDistance < distance && isCrossed
         where
           otherDistance = calcDistance attendee otherPlacement
           isCrossed =
             -- See: https://mathworld.wolfram.com/Circle-LineIntersection.html
             let
-              radius = 5
+              radius = 5 :: Int
               (px, py) = otherPlacement
               (x1, y1) = (attendee.attendeeX - px, attendee.attendeeY - py)
               (x2, y2) = (fst placement - px, snd placement - py)
               d = x1 * y2 - x2 * y1
-              discriment = radius ** 2 * otherDistance - d ** 2
+              discriment = radius * radius * otherDistance - d * d
              in discriment >= 0
 
-calcDistance :: Attendee -> (Float, Float) -> Float
-calcDistance attendee (px, py) = (attendee.attendeeX - px) ** 2 + (attendee.attendeeY - py) ** 2
+calcDistance :: Attendee -> (Int, Int) -> Int
+calcDistance attendee (px, py) = (attendee.attendeeX - px) ^ (2 :: Int) + (attendee.attendeeY - py) ^ (2 :: Int)
 
 scoreHappiness :: Problem -> Solution -> Int
 scoreHappiness problem solution = sum $ map (attendeeHappiness problem.problemMusicians solution) problem.problemAttendees

@@ -3,24 +3,24 @@ module ProgCon.Syntax where
 import Data.Vector.Unboxed qualified as UV
 
 data Attendee = Attendee
-    { attendeeTastes :: UV.Vector Float
-    , attendeeX :: Float
-    , attendeeY :: Float
+    { attendeeTastes :: UV.Vector Int
+    , attendeeX :: Int
+    , attendeeY :: Int
     }
     deriving (Show, Eq, Ord)
 
 data Problem = Problem
-    { problemStageHeight :: Float
-    , problemStageWidth :: Float
+    { problemStageHeight :: Int
+    , problemStageWidth :: Int
     , problemMusicians :: UV.Vector Int
-    , problemRoomHeight :: Float
-    , problemRoomWidth :: Float
+    , problemRoomHeight :: Int
+    , problemRoomWidth :: Int
     , problemAttendees :: [Attendee]
-    , problemStageBottomLeft :: (Float, Float)
+    , problemStageBottomLeft :: (Int, Int)
     }
     deriving (Show, Eq, Ord)
 
 newtype Solution = Solution
-    { solutionPlacements :: UV.Vector (Float, Float)
+    { solutionPlacements :: UV.Vector (Int, Int)
     }
     deriving (Show, Eq, Ord)

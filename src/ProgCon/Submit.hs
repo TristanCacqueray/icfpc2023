@@ -4,6 +4,7 @@ import Data.Aeson
 import Data.ByteString.Lazy qualified as BSL
 import Data.Text (pack)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+--import Data.Text.Lazy (toStrict)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types.Status (statusCode)
