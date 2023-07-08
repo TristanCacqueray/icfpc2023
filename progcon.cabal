@@ -45,6 +45,8 @@ common common
     PartialTypeSignatures
     OverloadedStrings
     OverloadedRecordDot
+    DerivingStrategies
+    MultiWayIf
 
 executable progcon
   import:              common
