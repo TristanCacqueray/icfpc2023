@@ -64,17 +64,22 @@ library
                      , gloss < 2
                      , MonadRandom < 3
                      , vector < 3
+                     , text < 3
                      , vector-shuffling < 3
 
                      , filepath
                      , say
                      , async
                      , time
+                     , http-client
+                     , http-client-tls
+                     , http-types
 
   exposed-modules:     ProgCon
                      , ProgCon.Eval
                      , ProgCon.GUI
                      , ProgCon.Parser
                      , ProgCon.Solve
+                     , ProgCon.Submit
                      , ProgCon.Syntax
   hs-source-dirs:      src
