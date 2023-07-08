@@ -15,14 +15,15 @@ drawProblem problem solution = Pictures (room : stage : (musicians <> attendees)
     room =
         Color red $
             rectangleWire (int2Float problem.problemRoomWidth) (int2Float problem.problemRoomHeight)
-    topX = -1 * problem.problemRoomWidth / 2
-    topY = problem.problemRoomHeight / 2
+    topX, topY :: Float
+    topX = -1 * fromIntegral problem.problemRoomWidth / 2
+    topY = fromIntegral problem.problemRoomHeight / 2
 
     musicians = map drawMusician (UV.toList solution.solutionPlacements)
-    drawMusician (x, y) = Translate (topX + x) (topY - y) $ Circle 10
+    drawMusician (x, y) = Translate (topX + fromIntegral x) (topY - fromIntegral y) $ Circle 10
 
     attendees = map drawAttendee problem.problemAttendees
-    drawAttendee attendee = Translate (topX + attendee.attendeeX) (topY - attendee.attendeeY) $ Circle attendeeSize
+    drawAttendee attendee = Translate (topX + fromIntegral attendee.attendeeX) (topY - fromIntegral attendee.attendeeY) $ Circle attendeeSize
     stage =
         Translate
             (topX + int2Float problem.problemStageWidth / 2 + int2Float stageX)
@@ -38,5 +39,5 @@ renderProblem problem solution = do
   where
     absScale = Scale (pscale * 0.98) (pscale * 0.98)
     wx, wy, pscale :: Float
-    (wx, wy) = (problem.problemRoomWidth * pscale, problem.problemRoomHeight * pscale)
+    (wx, wy) = (fromIntegral problem.problemRoomWidth * pscale, fromIntegral problem.problemRoomHeight * pscale)
     pscale = 1 / 5

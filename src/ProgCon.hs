@@ -11,7 +11,7 @@ import System.FilePath (takeBaseName)
 
 import Control.Concurrent.Async (mapConcurrently_)
 import ProgCon.Eval
---import ProgCon.GUI
+import ProgCon.GUI (renderProblem)
 import ProgCon.Parser
 import ProgCon.Solve
 import ProgCon.Syntax
@@ -80,17 +80,17 @@ saveSolve pos = do
             , problemPaths = Just (scorePath, solutionPath)
             }
 
--- mainRender :: FilePath -> FilePath -> IO ()
--- mainRender problemPath solutionPath = do
---     problem <- loadJSON @Problem problemPath
---     solution <- loadJSON @Solution solutionPath
---     putStrLn $ "musicians: " <> show (UV.length problem.problemMusicians)
---     putStrLn $ "room: " <> show (problem.problemRoomWidth, problem.problemRoomHeight)
---     putStrLn $ "stage: " <> show (problem.problemStageWidth, problem.problemStageHeight)
---     putStrLn $ "stagePos: " <> show problem.problemStageBottomLeft
---     let score = scoreHappiness problem solution
---     putStrLn $ "Score: " <> show score
---     renderProblem problem solution
+mainRender :: FilePath -> FilePath -> IO ()
+mainRender problemPath solutionPath = do
+    problem <- loadJSON @Problem problemPath
+    solution <- loadJSON @Solution solutionPath
+    putStrLn $ "musicians: " <> show (UV.length problem.problemMusicians)
+    putStrLn $ "room: " <> show (problem.problemRoomWidth, problem.problemRoomHeight)
+    putStrLn $ "stage: " <> show (problem.problemStageWidth, problem.problemStageHeight)
+    putStrLn $ "stagePos: " <> show problem.problemStageBottomLeft
+    let score = scoreHappiness problem solution
+    putStrLn $ "Score: " <> show score
+    renderProblem problem solution
 
 -- FIXME merge into check
 mainTest :: IO ()
@@ -113,10 +113,10 @@ main =
     mainCheck
     <$> strArg "PROBLEM"
     <*> strArg "SOLUTION"
-  -- , Subcommand "render" "show problem" $
-  --   mainRender
-  --   <$> strArg "PROBLEM"
-  --   <*> strArg "SOLUTION"
+  , Subcommand "render" "show problem" $
+    mainRender
+    <$> strArg "PROBLEM"
+    <*> strArg "SOLUTION"
   , Subcommand "test" "test spec problem solution" $
     pure mainTest
   , Subcommand "submit" "submit problem solution" $

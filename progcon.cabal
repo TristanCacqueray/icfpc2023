@@ -78,7 +78,7 @@ library
 
   exposed-modules:     ProgCon
                      , ProgCon.Eval
---                     , ProgCon.GUI
+                     , ProgCon.GUI
                      , ProgCon.Parser
                      , ProgCon.Solve
                      , ProgCon.Submit
