@@ -6,7 +6,7 @@ Run the tool:
 PROBLEM_PATH=./problems/problem-1.json
 
 # Render a problem with gloss
-cabal run progcon -- render $PROBLEM_PATH
+cabal run progcon -- render $PROBLEM_PATH $SOLUTION_PATH
 
 # Produce a solution
 cabal run progcon -- solve $PROBLEM_PATH
