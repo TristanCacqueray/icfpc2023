@@ -102,7 +102,7 @@ main =
     <$> strArg "FILE"
   , Subcommand "save" "genetic solve and saving problems" $
     mapConcurrently_ saveSolve
-    <$> some (intArg)
+    <$> some intArg
   , Subcommand "check" "check problem solution" $
     mainCheck
     <$> strArg "PROBLEM"
