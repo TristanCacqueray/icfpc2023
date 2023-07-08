@@ -13,6 +13,7 @@ import Network.HTTP.Client
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types.Status (statusCode)
 import System.Environment
+import System.Time.Extra (sleep)
 
 import Control.Monad (unless)
 import Data.Foldable (traverse_)
@@ -45,7 +46,8 @@ submit problem solution = do
         else do
             putStrLn $ "The status code was: " ++ show (statusCode $ responseStatus response)
             print $ responseBody response
-            pure Nothing
+            sleep 1 -- server often fails
+            submit problem solution
 
 getInfo :: SubmitID -> IO BS.ByteString
 getInfo (SubmitID sid) = do
