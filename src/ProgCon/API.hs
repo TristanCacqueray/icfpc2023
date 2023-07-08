@@ -1,6 +1,6 @@
 module ProgCon.API where
 
-import Data.Aeson (FromJSON)
+import Data.Aeson (FromJSON, Object)
 import Data.ByteString.Char8 qualified as B8
 import Network.HTTP.Client (applyBearerAuth)
 import Network.HTTP.Query
@@ -43,3 +43,29 @@ userBoard = do
   where
     renderScore (pos,mscore) =
       putStrLn $ '#' : show pos ++ ": " ++ maybe "null" show mscore
+
+scoreBoard :: IO ()
+scoreBoard = do
+  mobj <- accessAPI "scoreboard" [] id status200
+  case mobj of
+    Nothing -> putStrLn "failed to get scoreboard"
+    Just obj -> do
+      case lookupKey "frozen" obj of
+        Just True -> putStrLn "frozen"
+        _ -> return ()
+      case lookupKey "scoreboard" obj of
+        Nothing -> putStrLn "no scoreboard data"
+        Just (arr :: [Object]) ->
+          mapM_ printScore arr
+  where
+    ranking :: Object -> Maybe (Int,String)
+    ranking obj = do
+      score <- lookupKey "score" obj
+      name <- lookupKey "username" obj
+      return (score,name)
+
+    printScore obj =
+      case ranking obj of
+        Nothing -> return ()
+        Just (score,name) ->
+          putStrLn $ show score ++ " " ++ name
