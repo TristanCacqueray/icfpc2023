@@ -4,8 +4,8 @@ import Control.Monad
 import Data.Aeson qualified as Aeson
 import Data.Vector.Unboxed qualified as UV
 import Say
+import SimpleCmdArgs
 import System.Directory (doesFileExist)
-import System.Environment (getArgs)
 import System.FilePath (takeBaseName)
 
 import Control.Concurrent.Async (mapConcurrently_)
@@ -16,8 +16,12 @@ import ProgCon.Solve
 import ProgCon.Syntax
 import ProgCon.Submit
 
-mainCheck :: FilePath -> FilePath -> IO Int
-mainCheck problemPath solutionPath = do
+mainCheck :: FilePath -> FilePath -> IO ()
+mainCheck problemPath solutionPath =
+  runCheck problemPath solutionPath >>= print
+
+runCheck ::  FilePath -> FilePath -> IO Int
+runCheck problemPath solutionPath = do
     problem <- loadJSON @Problem problemPath
     solution <- loadJSON @Solution solutionPath
     pure (scoreHappiness problem solution)
@@ -79,21 +83,45 @@ saveSolve problemPath = do
 --     putStrLn $ "Score: " <> show score
 --     renderProblem problem solution
 
+-- FIXME merge into check
 mainTest :: IO ()
 mainTest = do
-    res <- mainCheck "./problems/problem-spec.json" "./problems/solution-spec.json"
+    res <- runCheck "./problems/problem-spec.json" "./problems/solution-spec.json"
     unless (res == 5343) do
         error $ "Invalid spec score, expected 5343, got: " <> show res
 
 main :: IO ()
-main = do
-    getArgs >>= \case
-        [] -> mainSolve "./problems/problem-10.json"
-        ["submit", n] -> submitOne (read n)
-        ["submits"] -> submitAll
-        ["test"] -> mainTest
+main =
+  simpleCmdArgs Nothing "progcon" "musical concert" $
+  subcommands
+  [ Subcommand "solve" "solve problem" $
+    mainSolve
+    <$> strArg "FILE"
+  , Subcommand "save" "genetic solve and saving problems" $
+    mapConcurrently_ saveSolve
+    <$> some (strArg "FILE")
+  , Subcommand "check" "check problem solution" $
+    mainCheck
+    <$> strArg "PROBLEM"
+    <*> strArg "SOLUTION"
+  -- , Subcommand "render" "show problem" $
+  --   mainRender
+  --   <$> strArg "PROBLEM"
+  --   <*> strArg "SOLUTION"
+  , Subcommand "test" "test spec problem solution" $
+    pure mainTest
+  , Subcommand "submit" "submit problem solution" $
+    submitOne
+    <$> argumentWith auto "NUM"
+  , Subcommand "submit-all" "submit all solutions" $
+    pure submitAll
+  ]
+      --  [] -> mainSolve "./problems/problem-10.json"
+--        ["submit", n] -> submitOne (read n)
+--        ["submits"] -> submitAll
+--        ["test"] -> mainTest
 --        ["render", problemPath, solutionPath] -> mainRender problemPath solutionPath
-        ["solve", fp] -> mainSolve fp
-        "save" : xs -> mapConcurrently_ saveSolve xs
-        ["check", problemPath, solutionPath] -> print =<< mainCheck problemPath solutionPath
-        _ -> error "usage: check pb solution | solve pb"
+      --  ["solve", fp] -> mainSolve fp
+      --  "save" : xs -> mapConcurrently_ saveSolve xs
+      --   ["check", problemPath, solutionPath] -> print =<< mainCheck problemPath solutionPath
+--        _ -> error "usage: check pb solution | solve pb"
