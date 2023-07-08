@@ -45,21 +45,21 @@ saveSolve problemPath = do
             let resultPath = problemPath <> ".solution.json"
             Aeson.encodeFile resultPath solution
         else do
-            sayString $ name <> ": same score: " <> show score
+            sayString $ name <> ": score: " <> show score <> ", prev was: " <> show prevScore
   where
     name = takeBaseName problemPath
     scorePath = problemPath <> ".score"
 
-mainRender :: FilePath -> IO ()
-mainRender problemPath = do
+mainRender :: FilePath -> FilePath -> IO ()
+mainRender problemPath solutionPath = do
     problem <- loadJSON @Problem problemPath
+    solution <- loadJSON @Solution solutionPath
     putStrLn $ "musicians: " <> show (UV.length problem.problemMusicians)
     putStrLn $ "room: " <> show (problem.problemRoomWidth, problem.problemRoomHeight)
     putStrLn $ "stage: " <> show (problem.problemStageWidth, problem.problemStageHeight)
     putStrLn $ "stagePos: " <> show problem.problemStageBottomLeft
-    (score, solution) <- solve (takeBaseName problemPath) problem
+    let score = scoreHappiness problem solution
     putStrLn $ "Score: " <> show score
-    writeSolution solution
     renderProblem problem solution
 
 mainTest :: IO ()
@@ -73,7 +73,7 @@ main = do
     getArgs >>= \case
         [] -> mainSolve "./problems/problem-10.json"
         ["test"] -> mainTest
-        ["render", problemPath] -> mainRender problemPath
+        ["render", problemPath, solutionPath] -> mainRender problemPath solutionPath
         ["solve", fp] -> mainSolve fp
         "save" : xs -> mapConcurrently_ saveSolve xs
         ["check", problemPath, solutionPath] -> print =<< mainCheck problemPath solutionPath

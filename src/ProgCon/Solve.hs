@@ -20,6 +20,9 @@ solve = geneticSolve
 
 type RandGen a = RandT StdGen IO a
 
+{- | All the positions are stored, that way all the mutation happen in-place.
+ in 'toSolution' we keep only the one for the active musician.
+-}
 newtype GenSolution = GenSolution (MV.IOVector (Float, Float))
 
 -- | Arranging the musicians in a grid, this function returns all the available placements.
@@ -39,20 +42,21 @@ toAbsPlacement problem (x, y) = (sx + x, sy + y)
 geneticSolve :: String -> Problem -> IO (Int, Solution)
 geneticSolve name problem = runRandGen do
     initialSeeds <- replicateM seedCount (randomSolution problem placements)
-    ((finalScore, finalSolution) : _) <- go 10 initialSeeds
+    ((finalScore, finalSolution) : _) <- go genCount initialSeeds
     solution <- toSolution problem finalSolution
     pure (finalScore, solution)
   where
+    genCount = 10
     seedCount = 10
     breedCount = 10
     dim = (problem.problemStageWidth, problem.problemStageHeight)
     placements = toAbsPlacement problem <$> allSquarePlacement dim
     total = length placements
-    count = UV.length problem.problemMusicians
+    musicianCount = UV.length problem.problemMusicians
 
     go :: Int -> [(Int, GenSolution)] -> RandGen [(Int, GenSolution)]
     go 0 !seeds = pure seeds
-    go epoch !seeds = do
+    go count !seeds = do
         -- Generate a new population
         population <- concat <$> traverse mutate seeds
 
@@ -60,13 +64,13 @@ geneticSolve name problem = runRandGen do
         let populationOrdered = sortOn (\(score, _) -> negate score) population
         let best = case population of
                 (x, _) : _ -> x
-                _ -> 0
+                _ -> minBound
         liftIO do
             now <- getCurrentTime
-            sayString $ printf "%s %s: epoch %2d - %10d" (take 25 $ iso8601Show now) name epoch best
+            sayString $ printf "%s %s: count %2d - %10d" (take 25 $ iso8601Show now) name (10 - count) best
 
         -- Repeat the process, keeping only the best seed.
-        go (epoch - 1) (take seedCount populationOrdered)
+        go (count - 1) (take seedCount populationOrdered)
       where
         mutate :: (Int, GenSolution) -> RandGen [(Int, GenSolution)]
         mutate x@(_, s) = (x :) <$> replicateM breedCount (makeNewSeed s)
@@ -80,10 +84,13 @@ geneticSolve name problem = runRandGen do
 
         doMutate :: GenSolution -> RandGen ()
         doMutate (GenSolution iov) = do
-            mutationCount <- getRandomR (epoch, MV.length iov `div` 5)
+            mutationCount <- getRandomR (genCount, MV.length iov `div` 5)
             replicateM_ mutationCount do
-                musician <- getRandomR (0, count - 1)
+                -- Pick a random musician
+                musician <- getRandomR (0, musicianCount - 1)
+                -- Pick a random new position
                 swapPos <- getRandomR (0, total - 1)
+                -- Mutate
                 MV.swap iov musician swapPos
 
 -- | Create a random solution.
