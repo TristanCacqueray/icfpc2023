@@ -63,6 +63,7 @@ library
                      , bytestring < 3
                      , gloss < 2
                      , MonadRandom < 3
+                     , simple-cmd-args
                      , vector < 3
                      , text < 3
                      , vector-shuffling < 3
