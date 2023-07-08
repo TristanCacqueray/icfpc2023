@@ -111,7 +111,7 @@ main =
   , Subcommand "test" "test spec problem solution" $
     pure mainTest
   , Subcommand "submit" "submit problem solution" $
-    submitOne
+    submitOne False
     <$> argumentWith auto "NUM"
   , Subcommand "submit-all" "submit all solutions" $
     pure submitAll

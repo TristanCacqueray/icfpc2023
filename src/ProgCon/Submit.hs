@@ -14,7 +14,7 @@ import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types.Status (statusCode)
 import System.Environment
 
-import Control.Monad (when)
+import Control.Monad (unless)
 import Data.Foldable (traverse_)
 import ProgCon.Parser (loadJSON)
 import ProgCon.Syntax (Solution)
@@ -79,11 +79,13 @@ waitFor sid = do
                 BS.putStr $ BS.take 207 resp
                 BS.putStr "\n"
 
-submitOne :: Int -> IO ()
-submitOne pos = do
+submitOne :: Bool -> Int -> IO ()
+submitOne lenient pos = do
     let fp = solutionPath
     hasSolution <- doesFileExist fp
-    when hasSolution do
+    if not hasSolution
+      then unless lenient $ error $ "solution file not found: " ++ fp
+      else do
         putStrLn $ "Go " <> fp
         solution <- loadJSON @Solution fp
         submit pos solution >>= \case
@@ -100,4 +102,4 @@ submitAll = traverse_ trySubmit [1 .. 55]
     trySubmit :: Int -> IO ()
     trySubmit pos
         | pos `elem` skip = pure ()
-        | otherwise = submitOne pos
+        | otherwise = submitOne True pos
