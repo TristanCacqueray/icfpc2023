@@ -27,7 +27,7 @@ Submit from the REPL:
 $ export ICFP_TOKEN=....
 $ cabal repl
 # Submit one
-λ> ProgCon.Submit.submit 55 =<< loadJSON @Solution "./problems/problem-55.json.solution.json"
+λ> ProgCon.Submit.submitOne 36
 
 # re-submit all
 λ> ProgCon.Submit.submits

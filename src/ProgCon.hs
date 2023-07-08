@@ -52,11 +52,11 @@ saveSolve problemPath = do
     (score, solution) <- solve prevSolution desc problem
     if score > prevScore
         then do
-            sayString $ desc.name <> ": new highscore: " <> show score
+            sayString $ desc.name <> ": COMPLETED, new highscore: " <> show score
             Aeson.encodeFile scorePath score
             Aeson.encodeFile solutionPath solution
         else do
-            sayString $ desc.name <> ": score: " <> show score <> ", prev was: " <> show prevScore
+            sayString $ desc.name <> ": done, not a highscore: " <> show score <> ", prev was: " <> show prevScore
   where
     scorePath = problemPath <> ".score"
     solutionPath = problemPath <> ".solution.json"
