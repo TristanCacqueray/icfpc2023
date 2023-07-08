@@ -46,9 +46,9 @@ geneticSolve name problem = runRandGen do
     solution <- toSolution problem finalSolution
     pure (finalScore, solution)
   where
-    genCount = 10
-    seedCount = 10
-    breedCount = 10
+    genCount = 3
+    seedCount = 1
+    breedCount = 2
     dim = (problem.problemStageWidth, problem.problemStageHeight)
     placements = toAbsPlacement problem <$> allSquarePlacement dim
     total = length placements
@@ -58,22 +58,25 @@ geneticSolve name problem = runRandGen do
     go 0 !seeds = pure seeds
     go count !seeds = do
         -- Generate a new population
-        population <- concat <$> traverse mutate seeds
+        population <- concat <$> traverse breedNewSolutions seeds
 
         -- Order by score
         let populationOrdered = sortOn (\(score, _) -> negate score) population
-        let best = case population of
-                (x, _) : _ -> x
+        let best = case populationOrdered of
+                (score, _) : _ -> score
                 _ -> minBound
         liftIO do
             now <- getCurrentTime
-            sayString $ printf "%s %s: count %2d - %10d" (take 25 $ iso8601Show now) name (10 - count) best
+            sayString $ printf "%s %s: gen %2d - %10d" (take 25 $ iso8601Show now) name count best
 
         -- Repeat the process, keeping only the best seed.
         go (count - 1) (take seedCount populationOrdered)
       where
-        mutate :: (Int, GenSolution) -> RandGen [(Int, GenSolution)]
-        mutate x@(_, s) = (x :) <$> replicateM breedCount (makeNewSeed s)
+        breedNewSolutions :: (Int, GenSolution) -> RandGen [(Int, GenSolution)]
+        breedNewSolutions x@(_, s) = do
+            newSolutions <- replicateM breedCount (makeNewSeed s)
+            -- Keep the original seed
+            pure (x : newSolutions)
 
         makeNewSeed :: GenSolution -> RandGen (Int, GenSolution)
         makeNewSeed (GenSolution seedPlacements) = do
