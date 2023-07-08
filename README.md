@@ -1,39 +1,16 @@
 # JKRT-2023
 
-Run the tool `cabal run -O2 progcon -- cmd`
+Run the tool `cabal run -O2 progcon -- --help`
 
-```ShellSession
-PROBLEM_PATH=./problems/problem-1.json
+## Usage
 
-# Compute solution(s)
-cabal run -O2 progcon -- save ./problems/problem-[0-9]*.json
+- Solve or improve a problem solution: `progcon solve 42`
 
-# Submit:
-export ICFP_TOKEN=secret
-cabal run -O2 progcon -- submit num
+- Submit an existing solution: `progcon submit 42`
 
-# Submit all:
-cabal run -O2 progcon -- submits
+- Visualize a solution: `progcon render ./problems/42-problem.json ./problems/42-solution.json`
 
-# Render a problem with gloss
-cabal run progcon -- render $PROBLEM_PATH $SOLUTION_PATH
-
-# Produce a solution
-cabal run progcon -- solve $PROBLEM_PATH
-
-# Compute a score
-cabal run progcon -- check $PROBLEM_PATH $SOLUTION_PATH
-
-# Run unit tests
-cabal run progcon -- test
-```
-
-Submit from the REPL:
-
-```ShellSession
-# re-submit all
-λ> ProgCon.Submit.submits
-```
+- Run test: `progcon test`
 
 ## nix
 

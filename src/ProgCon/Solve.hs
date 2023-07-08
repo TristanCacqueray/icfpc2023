@@ -1,7 +1,6 @@
 module ProgCon.Solve where
 
 import Control.Monad.Random.Strict
-import Data.Aeson qualified as Aeson
 import Data.Vector qualified as V
 import Data.Vector.Mutable qualified as MV
 import Data.Vector.Unboxed qualified as UV
@@ -12,29 +11,17 @@ import Data.List (sortOn)
 import Data.Time (getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import ProgCon.Eval
-import ProgCon.Parser ()
+import ProgCon.Parser (saveSolutionPath)
 import ProgCon.Syntax
 import Say
 import Text.Printf (printf)
 
-data ProblemDescription = ProblemDescription
-    { name :: String
-    , problemPaths :: Maybe (FilePath, FilePath)
-    }
-
-solve :: Maybe (Int, Solution) -> ProblemDescription -> Problem -> IO (Int, Solution)
+solve :: Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
 solve = geneticSolve
 
 type RandGen a = RandT StdGen IO a
 
 type Grid = Int
-
-{- | All the positions are stored, that way all the mutation happen in-place.
- in 'toSolution' we keep only the one for the active musician.
--}
-newtype GenSolution = GenSolution (MV.IOVector (Grid, Grid))
-
-type SolutionScore = Int
 
 -- | Arranging the musicians in a grid, this function returns all the available placements.
 allSquarePlacement :: (Grid, Grid) -> [(Grid, Grid)]
@@ -50,20 +37,20 @@ toAbsPlacement problem (x, y) = (sx + x, sy + y)
   where
     (sx, sy) = problem.problemStageBottomLeft
 
-geneticSolve :: Maybe (SolutionScore, Solution) -> ProblemDescription -> Problem -> IO (Int, Solution)
-geneticSolve mPrevSolution desc problem
-  | total < musicianCount = do
-      -- mapM_ print (allSquarePlacement padding dim)
-      error $ "Impossible square placement: " <> show dim <> ", for " <> show musicianCount <> " total: " <> show total
-  | otherwise = runRandGen do
-    initialSeeds <- case mPrevSolution of
-        Just (prevScore, prevSolution) -> do
-            seed <- fromSolution prevSolution problem placements
-            pure [(prevScore, seed)]
-        Nothing -> replicateM seedCount (randomSolution problem placements)
-    ((finalScore, finalSolution) : _) <- go genCount initialSeeds
-    solution <- toSolution problem finalSolution
-    pure (finalScore, solution)
+geneticSolve :: Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
+geneticSolve mPrevSolution problemDesc
+    | total < musicianCount = do
+        -- mapM_ print (allSquarePlacement padding dim)
+        sayString $ "Impossible square placement: " <> show dim <> ", for " <> show musicianCount <> " total: " <> show total
+        pure Nothing
+    | otherwise = runRandGen do
+        initialSeeds <- case mPrevSolution of
+            Just solution -> do
+                newSeeds <- replicateM (seedCount - 1) (randomSolution problem placements)
+                pure $ solution : newSeeds
+            Nothing -> replicateM seedCount (randomSolution problem placements)
+        (newSolution : _) <- go genCount initialSeeds
+        pure (Just newSolution)
   where
     genCount = 20
     seedCount = 8
@@ -72,54 +59,50 @@ geneticSolve mPrevSolution desc problem
     placements = toAbsPlacement problem <$> allSquarePlacement dim
     total = length placements
     musicianCount = UV.length problem.problemMusicians
+    problem = problemDesc.problem
 
-    go :: Int -> [(SolutionScore, GenSolution)] -> RandGen [(SolutionScore, GenSolution)]
+    go :: Int -> [SolutionDescription] -> RandGen [SolutionDescription]
     go 0 !seeds = pure seeds
     go count !seeds = do
         -- Generate a new population
         population <- concat <$> traverse breedNewSolutions seeds
 
         -- Order by score
-        let populationOrdered = sortOn (\(score, _) -> negate score) population
+        let populationOrdered = sortOn (\sd -> negate sd.score) population
         let prevScore = case seeds of
-                (prevScore', _) : _ -> prevScore'
+                sd : _ -> sd.score
                 _ -> minBound
         best <- case populationOrdered of
-            (score, solution) : _ -> do
-                when (score > prevScore) do
-                    case desc.problemPaths of
-                        Nothing -> pure ()
-                        Just (scorePath, solutionPath) -> do
-                            sayString $ desc.name <> ": new highscore: " <> show score <> ", saving: " <> solutionPath
-                            s <- toSolution problem solution
-                            liftIO $ Aeson.encodeFile scorePath score
-                            liftIO $ Aeson.encodeFile solutionPath s
-                pure score
+            sd : _ -> do
+                when (sd.score > prevScore) do
+                    sayString $ show problemDesc.name <> ": new highscore: " <> show sd.score <> ", saving..."
+                    liftIO $ saveSolutionPath sd (solutionPath problemDesc.name)
+                pure sd.score
             _ -> pure minBound
         liftIO do
             now <- getCurrentTime
-            sayString $ printf "%s %s: gen %2d - %10d" (take 25 $ iso8601Show now) desc.name (genCount - count) best
+            sayString $ printf "%s %s: gen %2d - %10d" (take 25 $ iso8601Show now) (show problemDesc.name) (genCount - count + 1) best
 
         -- Repeat the process, keeping only the best seed.
         go (count - 1) (take seedCount populationOrdered)
       where
-        breedNewSolutions :: (SolutionScore, GenSolution) -> RandGen [(SolutionScore, GenSolution)]
-        breedNewSolutions x@(_, s) = do
-            newSolutions <- replicateM breedCount (makeNewSeed s)
+        breedNewSolutions :: SolutionDescription -> RandGen [SolutionDescription]
+        breedNewSolutions sd = do
+            newSolutions <- replicateM breedCount (makeNewSeed sd)
             -- Keep the original seed
-            pure (x : newSolutions)
+            pure (sd : newSolutions)
 
         -- Create a new solution based on the previous one
-        makeNewSeed :: GenSolution -> RandGen (Int, GenSolution)
-        makeNewSeed (GenSolution seedPlacements) = do
-            newSolution <- GenSolution <$> MV.clone seedPlacements
-            doMutate newSolution
-            score <- scoreSolution problem newSolution
-            pure (score, newSolution)
+        makeNewSeed :: SolutionDescription -> RandGen SolutionDescription
+        makeNewSeed sd = do
+            genPlacements <- GenPlacements <$> MV.clone sd.genPlacements.iov
+            doMutate genPlacements
+            score <- scoreSolution problem genPlacements
+            pure SolutionDescription{score, musicianCount, genPlacements}
 
         -- Shuffle the musician placement randomly
-        doMutate :: GenSolution -> RandGen ()
-        doMutate (GenSolution iov) = do
+        doMutate :: GenPlacements -> RandGen ()
+        doMutate (GenPlacements iov) = do
             mutationCount <- getRandomR (genCount, MV.length iov `div` 5)
             replicateM_ mutationCount do
                 -- Pick a random musician
@@ -130,37 +113,27 @@ geneticSolve mPrevSolution desc problem
                 MV.swap iov musician swapPos
 
 -- | Create a random solution.
-randomSolution :: Problem -> [(Grid, Grid)] -> RandGen (Int, GenSolution)
+randomSolution :: Problem -> [(Grid, Grid)] -> RandGen SolutionDescription
 randomSolution problem xs = do
     iov <- V.thaw (V.fromList xs)
     liftRandT \stdg -> do
         newstdg <- stToIO $ shuffle iov stdg
         pure ((), newstdg)
-    let gs = GenSolution iov
-    score <- scoreSolution problem gs
-    pure (score, gs)
+    let genPlacements = GenPlacements iov
+        musicianCount = UV.length problem.problemMusicians
+    score <- scoreSolution problem genPlacements
+    pure (SolutionDescription{score, musicianCount, genPlacements})
 
--- | Create the 'Solution' data from a 'GenSolution'.
-toSolution :: Problem -> GenSolution -> RandGen Solution
-toSolution problem (GenSolution iov) = do
+-- | Create the 'Solution' data from a 'GenPlacements'.
+toSolution :: Int -> GenPlacements -> IO Solution
+toSolution musicianCount (GenPlacements iov) = do
     xs <- UV.convert <$> V.freeze iov
-    pure $ Solution $ UV.take (UV.length problem.problemMusicians) xs
+    pure $ Solution $ UV.take musicianCount xs
 
-fromSolution :: Solution -> Problem -> [(Grid, Grid)] -> RandGen GenSolution
-fromSolution solution problem xs = do
-    iov <- MV.generate (length xs) \pos ->
-        if pos < musicianCount
-            then solution.solutionPlacements UV.! pos -- re-use previous musician position
-            else otherPlacements UV.! (pos - musicianCount)
-    pure $ GenSolution iov
-  where
-    otherPlacements = UV.fromList [pos | pos <- xs, pos `UV.notElem` solution.solutionPlacements]
-    musicianCount = UV.length problem.problemMusicians
-
--- | Compute the score of a 'GenSolution'.
-scoreSolution :: Problem -> GenSolution -> RandGen Int
+-- | Compute the score of a 'GenPlacements'.
+scoreSolution :: Problem -> GenPlacements -> RandGen Int
 scoreSolution problem gs = do
-    solution <- toSolution problem gs
+    solution <- liftIO (toSolution (UV.length problem.problemMusicians) gs)
     pure $ scoreHappiness problem solution
 
 -- | Helper to run the MonadRandom.

@@ -1,13 +1,10 @@
 module ProgCon (main) where
 
 import Control.Monad
-import Data.Aeson qualified as Aeson
-import Data.Maybe (isJust)
 import Data.Vector.Unboxed qualified as UV
 import Say
 import SimpleCmdArgs
 import System.Directory (doesFileExist)
-import System.FilePath (takeBaseName)
 
 import Control.Concurrent.Async (mapConcurrently_)
 import ProgCon.API
@@ -19,72 +16,59 @@ import ProgCon.Syntax
 import ProgCon.Submit
 
 mainCheck :: FilePath -> FilePath -> IO ()
-mainCheck problemPath solutionPath =
-  runCheck problemPath solutionPath >>= print
+mainCheck problemFP solutionFP =
+  runCheck problemFP solutionFP >>= print
 
 runCheck ::  FilePath -> FilePath -> IO Int
-runCheck problemPath solutionPath = do
-    problem <- loadJSON @Problem problemPath
-    solution <- loadJSON @Solution solutionPath
+runCheck problemFP solutionFP = do
+    problem <- loadJSON @Problem problemFP
+    solutionDesc <- loadSolutionPath solutionFP
+    solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
     pure (scoreHappiness problem solution)
 
-mainSolve :: FilePath -> IO ()
-mainSolve problemPath = do
-    problem <- loadJSON @Problem problemPath
-    (score, solution) <- solve Nothing desc problem
-    putStrLn $ "Score: " <> show score
-    writeSolution solution
+loadProblem :: ProblemID -> IO ProblemDescription
+loadProblem pid = ProblemDescription pid <$> loadJSON @Problem (problemPath pid)
+
+loadSolution :: ProblemID -> IO (Maybe SolutionDescription)
+loadSolution pid = doesFileExist solutionFP >>= \case
+  True -> do
+    solutionDesc <- loadSolutionPath solutionFP
+    sayString $ show pid <> ": reloading from " <> solutionFP <> " (score: " <> show solutionDesc.score
+    pure (Just solutionDesc)
+  False -> pure Nothing
   where
-    desc = ProblemDescription (takeBaseName problemPath) Nothing
+    solutionFP = solutionPath pid
 
-saveSolve :: Int -> IO ()
-saveSolve pos = do
-    prevScore <- do
-        hasScore <- doesFileExist scorePath
-        if hasScore
-            then loadJSON @Int scorePath
-            else pure minBound
-    problem <- loadJSON @Problem problemPath
-    sayString $ desc.name <> ": starting... musician count: " <> show (UV.length problem.problemMusicians)
+mainSolve :: ProblemID -> IO ()
+mainSolve pid = do
+    mPrevSolution <- loadSolution pid
+    problemDesc <- loadProblem pid
+    let debug msg = sayString $ show problemDesc.name <> ": " <> msg
 
-    prevSolution <- do
-        hasSolution <- doesFileExist solutionPath
-        if hasSolution
-            then do
-                solution <- loadJSON @Solution solutionPath
-                sayString $ desc.name <> ": reloading from " <> solutionPath <> " (score: " <> show prevScore
-                pure (Just (prevScore, solution))
-            else pure Nothing
+    debug $ "starting... musician count: " <> show (UV.length problemDesc.problem.problemMusicians)
 
-    (score, solution) <- solve prevSolution desc problem
-    if score > prevScore
-        then do
-            sayString $ desc.name <> ": COMPLETED, new highscore: " <> show score
-            Aeson.encodeFile scorePath score
-            Aeson.encodeFile solutionPath solution
-            if score > 0 || isJust prevSolution && score > prevScore
-              then do
-              when (isJust prevSolution) $
-                putStrLn $ "#" ++ show pos ++ " score: " ++ show prevScore ++ " -> " ++ show score
-              submitOne False pos
-              else putStrLn $ "skipped submitting score: " ++ show score
-        else do
-            sayString $ desc.name <> ": done, not a highscore: " <> show score <> ", prev was: " <> show prevScore
-  where
-    problemPath :: FilePath
-    problemPath = "./problems/problem-" <> show pos <> ".json"
-    scorePath = problemPath <> ".score"
-    solutionPath = problemPath <> ".solution.json"
-    desc =
-        ProblemDescription
-            { name = takeBaseName problemPath
-            , problemPaths = Just (scorePath, solutionPath)
-            }
+    let prevScore = case mPrevSolution of
+          Nothing -> minBound
+          Just prevSolution -> prevSolution.score
+
+    mSolution <- solve mPrevSolution problemDesc
+    case mSolution of
+      Just solution
+        | solution.score > prevScore -> do
+            debug $ "COMPLETED, new highscore: " <> show solution.score
+            when (solution.score > 0) do
+              when (prevScore > minBound) do
+                debug $ "score: " ++ show prevScore ++ " -> " ++ show solution.score
+              submitOne False pid
+        | otherwise ->
+            sayString $ show problemDesc.name <> ": done, not a highscore: " <> show solution.score <> ", prev was: " <> show prevScore
+      Nothing -> sayString $ show problemDesc.name <> ": couldn't find a solution!"
 
 mainRender :: FilePath -> FilePath -> IO ()
-mainRender problemPath solutionPath = do
-    problem <- loadJSON @Problem problemPath
-    solution <- loadJSON @Solution solutionPath
+mainRender problemFP solutionFP = do
+    problem <- loadJSON @Problem problemFP
+    solutionDesc <- loadSolutionPath solutionFP
+    solution <- toSolution (UV.length problem.problemMusicians) solutionDesc.genPlacements
     putStrLn $ "musicians: " <> show (UV.length problem.problemMusicians)
     putStrLn $ "room: " <> show (problem.problemRoomWidth, problem.problemRoomHeight)
     putStrLn $ "stage: " <> show (problem.problemStageWidth, problem.problemStageHeight)
@@ -96,7 +80,7 @@ mainRender problemPath solutionPath = do
 -- FIXME merge into check
 mainTest :: IO ()
 mainTest = do
-    res <- runCheck "./problems/problem-spec.json" "./problems/solution-spec.json"
+    res <- runCheck "./problems/spec-problem.json" "./problems/spec-solution.json"
     unless (res == 5343) do
         error $ "Invalid spec score, expected 5343, got: " <> show res
 
@@ -104,30 +88,27 @@ main :: IO ()
 main =
   simpleCmdArgs Nothing "progcon" "musical concert" $
   subcommands
-  [ Subcommand "solve" "solve problem" $
-    mainSolve
-    <$> strArg "FILE"
-  , Subcommand "save" "genetic solve and saving problems" $
-    mapConcurrently_ saveSolve
+  [ Subcommand "solve" "solve problem and submit if new highscore" $
+    mapConcurrently_ mainSolve
     <$> some intArg
-  , Subcommand "check" "check problem solution" $
-    mainCheck
-    <$> strArg "PROBLEM"
-    <*> strArg "SOLUTION"
-  , Subcommand "render" "show problem" $
-    mainRender
-    <$> strArg "PROBLEM"
-    <*> strArg "SOLUTION"
-  , Subcommand "test" "test spec problem solution" $
-    pure mainTest
   , Subcommand "submit" "submit problem solution" $
     submitOne False
     <$> intArg
-  , Subcommand "submit-all" "submit all solutions" $
+  , Subcommand "score" "compute a solution score" $
+    mainCheck
+    <$> strArg "PROBLEM"
+    <*> strArg "SOLUTION"
+  , Subcommand "render" "start GUI to visualize the problem and solution" $
+    mainRender
+    <$> strArg "PROBLEM"
+    <*> strArg "SOLUTION"
+  , Subcommand "test" "run unit-test" $
+    pure mainTest
+  , Subcommand "submit-all" "submit all solutions (this need work to check if existing solution are better)" $
     pure submitAll
   , Subcommand "userboard" "get userboard data" $
     pure userBoard
   ]
   where
-    intArg :: Parser Int
-    intArg = argumentWith auto "NUM"
+    intArg :: Parser ProblemID
+    intArg = ProblemID <$> argumentWith auto "NUM"

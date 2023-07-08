@@ -1,6 +1,3 @@
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE MultiWayIf #-}
-
 module ProgCon.Submit where
 
 import Control.Concurrent (threadDelay)
@@ -17,17 +14,18 @@ import System.Time.Extra (sleep)
 
 import Control.Monad (unless)
 import Data.Foldable (traverse_)
-import ProgCon.Parser (loadJSON)
-import ProgCon.Syntax (Solution)
+import ProgCon.Parser (loadSolutionPath)
+import ProgCon.Solve (toSolution)
+import ProgCon.Syntax
 import System.Directory (doesFileExist)
 
 newtype SubmitID = SubmitID Text
     deriving newtype (FromJSON)
     deriving (Show)
 
-submit :: Int -> Solution -> IO (Maybe SubmitID)
-submit problem solution = do
-    let obj = object ["problem_id" .= problem, "contents" .= decodeUtf8 (BSL.toStrict $ encode solution)]
+submit :: ProblemID -> Solution -> IO (Maybe SubmitID)
+submit pid solution = do
+    let obj = object ["problem_id" .= pid, "contents" .= decodeUtf8 (BSL.toStrict $ encode solution)]
     token <- getEnv "ICFP_TOKEN"
     manager <- newTlsManager
     initialRequest <- parseRequest "https://api.icfpcontest.com/submission"
@@ -47,7 +45,7 @@ submit problem solution = do
             putStrLn $ "The status code was: " ++ show (statusCode $ responseStatus response)
             print $ responseBody response
             sleep 1 -- server often fails
-            submit problem solution
+            submit pid solution
 
 getInfo :: SubmitID -> IO BS.ByteString
 getInfo (SubmitID sid) = do
@@ -81,21 +79,21 @@ waitFor sid = do
                 BS.putStr $ BS.take 207 resp
                 BS.putStr "\n"
 
-submitOne :: Bool -> Int -> IO ()
-submitOne lenient pos = do
-    let fp = solutionPath
-    hasSolution <- doesFileExist fp
+submitOne :: Bool -> ProblemID -> IO ()
+submitOne lenient pid = do
+    hasSolution <- doesFileExist solutionFP
     if not hasSolution
-      then unless lenient $ error $ "solution file not found: " ++ fp
-      else do
-        putStrLn $ "Go " <> fp
-        solution <- loadJSON @Solution fp
-        submit pos solution >>= \case
-            Just sid -> print sid >> waitFor sid
-            Nothing -> pure ()
+        then unless lenient $ error $ "solution file not found: " ++ solutionFP
+        else do
+            putStrLn $ "Go " <> solutionFP
+            solutionDesc <- loadSolutionPath solutionFP
+            solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
+            submit pid solution >>= \case
+                Just sid -> print sid >> waitFor sid
+                Nothing -> pure ()
   where
-    solutionPath :: FilePath
-    solutionPath = "./problems/problem-" <> show pos <> ".json.solution.json"
+    solutionFP :: FilePath
+    solutionFP = solutionPath pid
 
 submitAll :: IO ()
 submitAll = traverse_ trySubmit [1 .. 55]
@@ -104,4 +102,4 @@ submitAll = traverse_ trySubmit [1 .. 55]
     trySubmit :: Int -> IO ()
     trySubmit pos
         | pos `elem` skip = pure ()
-        | otherwise = submitOne True pos
+        | otherwise = submitOne True (ProblemID pos)
