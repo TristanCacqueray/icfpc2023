@@ -37,8 +37,8 @@ type SolutionScore = Int
 -- | Arranging the musicians in a grid, this function returns all the available placements.
 allSquarePlacement :: (Float, Float) -> [(Float, Float)]
 allSquarePlacement (width, height) = do
-    x <- [0 .. width / (2 * radius) - 1]
-    y <- [0 .. height / (2 * radius) - 1]
+    x <- [0 .. width / (2 * radius) - 2]
+    y <- [0 .. height / (2 * radius) - 2]
     pure (radius + x * 2 * radius, radius + y * 2 * radius)
   where
     radius = 10
@@ -59,9 +59,9 @@ geneticSolve mPrevSolution desc problem = runRandGen do
     solution <- toSolution problem finalSolution
     pure (finalScore, solution)
   where
-    genCount = 3
+    genCount = 5
     seedCount = 1
-    breedCount = 2
+    breedCount = 1
     dim = (problem.problemStageWidth, problem.problemStageHeight)
     placements = toAbsPlacement problem <$> allSquarePlacement dim
     total = length placements
