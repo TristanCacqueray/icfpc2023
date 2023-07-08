@@ -20,11 +20,12 @@ attendeeHappiness instruments solution attendee = UV.sum $ UV.imap musicianImpac
        -- the distance between the attendee and the musician
        distance = calcDistance attendee placement
        -- is the musician blocked by another musician?
-       isBlocked = UV.any checkBlocked solution.solutionPlacements
-       checkBlocked :: (Float, Float) -> Bool
-       checkBlocked otherPlacement = otherDistance < distance && isCrossed
+       isBlocked = UV.or (UV.imap checkBlocked solution.solutionPlacements)
+       checkBlocked :: Int -> (Float, Float) -> Bool
+       checkBlocked otherMusician otherPlacement = otherInstrument /= instrument && otherDistance < distance && isCrossed
         where
           otherDistance = calcDistance attendee otherPlacement
+          otherInstrument = instruments ! otherMusician
           isCrossed =
             -- See: https://mathworld.wolfram.com/Circle-LineIntersection.html
             let
