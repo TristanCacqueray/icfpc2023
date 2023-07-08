@@ -1,7 +1,6 @@
 module ProgCon (main) where
 
 import RIO
-import Control.Concurrent
 import Data.Vector.Unboxed qualified as UV
 import Say
 import SimpleCmdArgs
