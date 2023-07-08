@@ -1,5 +1,6 @@
 module ProgCon.API where
 
+import Control.Exception (catch, SomeException)
 import Data.Aeson (FromJSON, Object)
 import Data.ByteString.Char8 qualified as B8
 import Network.HTTP.Client (applyBearerAuth)
@@ -7,6 +8,7 @@ import Network.HTTP.Query
 import Network.HTTP.Simple
 import Network.HTTP.Types
 import System.Environment
+import System.Time.Extra (sleep)
 
 apiServer :: String
 apiServer = "https://api.icfpcontest.com"
@@ -17,7 +19,7 @@ accessAPI method params settings expected = do
   token <- getEnv "ICFP_TOKEN"
   withURLQuery (apiServer +/+ method) params $ \req -> do
     response <-
-      httpJSON (applyBearerAuth (B8.pack token) $ settings req)
+      httpJSONException (applyBearerAuth (B8.pack token) $ settings req)
     if getResponseStatus response == expected
       then return $ Just $ getResponseBody response
       else do
@@ -25,6 +27,12 @@ accessAPI method params settings expected = do
       putStrLn $ "status code: " ++ show (statusCode status) ++ " " ++ B8.unpack (statusMessage status)
       --print (getResponseBody response :: Object)
       return Nothing
+  where
+    httpJSONException r =
+      httpJSON r `catch` \(e :: SomeException) -> do
+      print e
+      sleep 2
+      httpJSONException r
 
 userBoard:: IO ()
 userBoard = do
