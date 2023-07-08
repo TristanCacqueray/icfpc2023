@@ -51,7 +51,11 @@ toAbsPlacement problem (x, y) = (sx + x, sy + y)
     (sx, sy) = problem.problemStageBottomLeft
 
 geneticSolve :: Maybe (SolutionScore, Solution) -> ProblemDescription -> Problem -> IO (Int, Solution)
-geneticSolve mPrevSolution desc problem = runRandGen do
+geneticSolve mPrevSolution desc problem
+  | total < musicianCount = do
+      -- mapM_ print (allSquarePlacement padding dim)
+      error $ "Impossible square placement: " <> show dim <> ", for " <> show musicianCount <> " total: " <> show total
+  | otherwise = runRandGen do
     initialSeeds <- case mPrevSolution of
         Just (prevScore, prevSolution) -> do
             seed <- fromSolution prevSolution problem placements
