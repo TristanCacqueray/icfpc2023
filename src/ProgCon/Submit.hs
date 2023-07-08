@@ -10,8 +10,11 @@ import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types.Status (statusCode)
 import System.Environment
 
-import ProgCon.Parser ()
+import Control.Monad (when)
+import Data.Foldable (traverse_)
+import ProgCon.Parser (loadJSON)
 import ProgCon.Syntax (Solution)
+import System.Directory (doesFileExist)
 
 submit :: Int -> Solution -> IO ()
 submit problem solution = do
@@ -19,8 +22,6 @@ submit problem solution = do
     token <- getEnv "ICFP_TOKEN"
     manager <- newTlsManager
     initialRequest <- parseRequest "https://api.icfpcontest.com/submission"
-    BSL.putStr (encode obj)
-    BSL.putStr "\n"
     let request =
             initialRequest
                 { method = "POST"
@@ -33,3 +34,17 @@ submit problem solution = do
     response <- httpLbs request manager
     putStrLn $ "The status code was: " ++ (show $ statusCode $ responseStatus response)
     print $ responseBody response
+
+submits :: IO ()
+submits = traverse_ trySubmit [1 :: Int .. 55]
+  where
+    skip = [30, 39, 2, 51]
+    trySubmit pos
+        | pos `elem` skip = pure ()
+        | otherwise = do
+            let solutionPath = "./problems/problem-" <> show pos <> ".json.solution.json"
+            hasSolution <- doesFileExist solutionPath
+            when hasSolution do
+                putStrLn $ "Go " <> solutionPath
+                solution <- loadJSON @Solution solutionPath
+                submit pos solution
