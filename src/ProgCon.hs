@@ -2,6 +2,7 @@ module ProgCon (main) where
 
 import Control.Monad
 import Data.Aeson qualified as Aeson
+import Data.Maybe (isJust)
 import Data.Vector.Unboxed qualified as UV
 import Say
 import SimpleCmdArgs
@@ -60,7 +61,12 @@ saveSolve pos = do
             sayString $ desc.name <> ": COMPLETED, new highscore: " <> show score
             Aeson.encodeFile scorePath score
             Aeson.encodeFile solutionPath solution
-            submitOne False pos
+            if score > 0 || isJust prevSolution && score > prevScore
+              then do
+              when (isJust prevSolution) $
+                putStrLn $ "#" ++ show pos ++ " score: " ++ show prevScore ++ " -> " ++ show score
+              submitOne False pos
+              else putStrLn $ "skipped submitting score: " ++ show score
         else do
             sayString $ desc.name <> ": done, not a highscore: " <> show score <> ", prev was: " <> show prevScore
   where
