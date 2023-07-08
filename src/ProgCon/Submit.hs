@@ -43,11 +43,11 @@ submit problem solution = do
     if statusCode (responseStatus response) == 201
         then pure $ decode (responseBody response)
         else do
-            putStrLn $ "The status code was: " ++ (show $ statusCode $ responseStatus response)
+            putStrLn $ "The status code was: " ++ show (statusCode $ responseStatus response)
             print $ responseBody response
             pure Nothing
 
-getInfo :: SubmitID -> IO (BS.ByteString)
+getInfo :: SubmitID -> IO BS.ByteString
 getInfo (SubmitID sid) = do
     token <- getEnv "ICFP_TOKEN"
     manager <- newTlsManager
@@ -68,7 +68,7 @@ waitFor sid = do
     resp <- getInfo sid
     if
             | "Processing" `BS.isInfixOf` resp -> do
-                putStrLn $ "Processing..."
+                putStrLn "Processing..."
                 threadDelay 5_000_000
                 waitFor sid
             | "Success" `BS.isInfixOf` resp -> do
