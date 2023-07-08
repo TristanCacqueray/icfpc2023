@@ -14,6 +14,7 @@ import ProgCon.Eval
 import ProgCon.Parser
 import ProgCon.Solve
 import ProgCon.Syntax
+import ProgCon.Submit
 
 mainCheck :: FilePath -> FilePath -> IO Int
 mainCheck problemPath solutionPath = do
@@ -88,6 +89,8 @@ main :: IO ()
 main = do
     getArgs >>= \case
         [] -> mainSolve "./problems/problem-10.json"
+        ["submit", n] -> submitOne (read n)
+        ["submits"] -> submitAll
         ["test"] -> mainTest
 --        ["render", problemPath, solutionPath] -> mainRender problemPath solutionPath
         ["solve", fp] -> mainSolve fp
