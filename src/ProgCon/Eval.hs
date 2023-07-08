@@ -5,24 +5,38 @@ import Data.Vector.Unboxed ((!))
 
 import ProgCon.Syntax
 
-attendeeHappiness :: UV.Vector Int -> Solution -> Attendee -> Int
-attendeeHappiness instruments solution attendee = UV.sum $ UV.imap musicianImpact solution.solutionPlacements
+type MusicianClosenessFactor = UV.Vector Float -- is Float necessary?
+
+attendeeHappiness :: ProblemDescription -> Solution -> MusicianClosenessFactor -> Attendee -> Int
+attendeeHappiness problemDesc solution musicianClosenessFactor attendee = UV.sum musiciansHappiness
   where
+    musiciansHappiness =  UV.imap musicianImpact solution.solutionPlacements
+
     musicianImpact :: Int -> (Int, Int) -> Int
     musicianImpact !musician placement
       | isBlocked = 0
       | otherwise =
         let (d,m) = (1_000_000 * taste) `divMod` distance
-        in d + if m > 0 then 1 else 0
+            baseImpact = d + if m > 0 then 1 else 0
+            closenessFactor = musicianClosenessFactor ! musician
+        in ceiling $ closenessFactor * fromIntegral baseImpact
      where
        -- the musician's instrument
-       instrument = instruments ! musician
+       instrument = problemDesc.problem.problemMusicians ! musician
        -- the attendee taste for this instrument
        taste = attendee.attendeeTastes ! instrument
        -- the distance between the attendee and the musician
        distance = calcDistance attendee placement
-       -- is the musician blocked by another musician?
-       isBlocked = UV.any checkBlocked solution.solutionPlacements
+       -- is the musician blocked
+       isBlocked = isBlockedPillar || isBlockedMusician
+
+       -- … by a pillar (Extension 1)?
+       isBlockedPillar = UV.any checkBlockedPillar problemDesc.pillars
+       checkBlockedPillar :: (Int, Int, Int) -> Bool
+       checkBlockedPillar (_px, _py, _radius) = False -- TODO
+
+       -- … by another musician?
+       isBlockedMusician = UV.any checkBlocked solution.solutionPlacements
        checkBlocked :: (Int, Int) -> Bool
        checkBlocked otherPlacement = otherDistance < distance && isCrossed
         where
@@ -41,5 +55,12 @@ attendeeHappiness instruments solution attendee = UV.sum $ UV.imap musicianImpac
 calcDistance :: Attendee -> (Int, Int) -> Int
 calcDistance attendee (px, py) = (attendee.attendeeX - px) ^ (2 :: Int) + (attendee.attendeeY - py) ^ (2 :: Int)
 
-scoreHappiness :: Problem -> Solution -> Int
-scoreHappiness problem solution = sum $ map (attendeeHappiness problem.problemMusicians solution) problem.problemAttendees
+-- TODO: add extensions toggle?
+scoreHappiness :: ProblemDescription -> Solution -> Int
+scoreHappiness problemDesc solution = sum allHappiness
+  where
+    problem = problemDesc.problem
+    allHappiness = map (attendeeHappiness problemDesc solution musicianClosenessFactor) problem.problemAttendees
+    musicianClosenessFactor = UV.generate (UV.length problem.problemMusicians) calcClosenessFactor
+    -- Extension 2:
+    calcClosenessFactor _musician = 1 -- TODO
