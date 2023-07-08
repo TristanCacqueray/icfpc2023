@@ -3,7 +3,22 @@
 Run the tool:
 
 ```ShellSession
-cabal run progcon --  ./problems/problem-1.json
+PROBLEM_PATH=./problems/problem-1.json
+
+# Render a problem with gloss
+cabal run progcon -- render $PROBLEM_PATH
+
+# Produce a solution
+cabal run progcon -- solve $PROBLEM_PATH
+
+# Compute a score
+cabal run progcon -- check $PROBLEM_PATH $SOLUTION_PATH
+
+# Run unit tests
+cabal run progcon -- test
+
+# Compute all solutions in parallel
+cabal run -O2 progcon -- save ./problems/problem-[0-9]*.json
 ```
 
 ## nix
