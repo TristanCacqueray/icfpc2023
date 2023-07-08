@@ -27,23 +27,25 @@ solve = geneticSolve
 
 type RandGen a = RandT StdGen IO a
 
+type Grid = Int
+
 {- | All the positions are stored, that way all the mutation happen in-place.
  in 'toSolution' we keep only the one for the active musician.
 -}
-newtype GenSolution = GenSolution (MV.IOVector (Float, Float))
+newtype GenSolution = GenSolution (MV.IOVector (Grid, Grid))
 
 type SolutionScore = Int
 
 -- | Arranging the musicians in a grid, this function returns all the available placements.
-allSquarePlacement :: (Float, Float) -> [(Float, Float)]
+allSquarePlacement :: (Grid, Grid) -> [(Grid, Grid)]
 allSquarePlacement (width, height) = do
-    x <- [0 .. width / (2 * radius) - 2]
-    y <- [0 .. height / (2 * radius) - 2]
+    x <- [0 .. width `div` (2 * radius) - 2]
+    y <- [0 .. height `div` (2 * radius) - 2]
     pure (radius + x * 2 * radius, radius + y * 2 * radius)
   where
     radius = 10
 
-toAbsPlacement :: Problem -> (Float, Float) -> (Float, Float)
+toAbsPlacement :: Problem -> (Grid, Grid) -> (Grid, Grid)
 toAbsPlacement problem (x, y) = (sx + x, sy + y)
   where
     (sx, sy) = problem.problemStageBottomLeft
@@ -124,7 +126,7 @@ geneticSolve mPrevSolution desc problem = runRandGen do
                 MV.swap iov musician swapPos
 
 -- | Create a random solution.
-randomSolution :: Problem -> [(Float, Float)] -> RandGen (Int, GenSolution)
+randomSolution :: Problem -> [(Grid, Grid)] -> RandGen (Int, GenSolution)
 randomSolution problem xs = do
     iov <- V.thaw (V.fromList xs)
     liftRandT \stdg -> do
@@ -140,7 +142,7 @@ toSolution problem (GenSolution iov) = do
     xs <- UV.convert <$> V.freeze iov
     pure $ Solution $ UV.take (UV.length problem.problemMusicians) xs
 
-fromSolution :: Solution -> Problem -> [(Float, Float)] -> RandGen GenSolution
+fromSolution :: Solution -> Problem -> [(Grid, Grid)] -> RandGen GenSolution
 fromSolution solution problem xs = do
     iov <- MV.generate (length xs) \pos ->
         if pos < musicianCount

@@ -2,6 +2,7 @@ module ProgCon.GUI where
 
 import Graphics.Gloss
 import Data.Vector.Unboxed qualified as UV
+import GHC.Float (int2Float)
 
 import ProgCon.Syntax
 
@@ -13,7 +14,7 @@ drawProblem problem solution = Pictures (room : stage : (musicians <> attendees)
   where
     room =
         Color red $
-            rectangleWire problem.problemRoomWidth problem.problemRoomHeight
+            rectangleWire (int2Float problem.problemRoomWidth) (int2Float problem.problemRoomHeight)
     topX = -1 * problem.problemRoomWidth / 2
     topY = problem.problemRoomHeight / 2
 
@@ -24,11 +25,11 @@ drawProblem problem solution = Pictures (room : stage : (musicians <> attendees)
     drawAttendee attendee = Translate (topX + attendee.attendeeX) (topY - attendee.attendeeY) $ Circle attendeeSize
     stage =
         Translate
-            (topX + problem.problemStageWidth / 2 + stageX)
-            (topY - problem.problemStageHeight / 2 - stageY)
+            (topX + int2Float problem.problemStageWidth / 2 + int2Float stageX)
+            (topY - int2Float problem.problemStageHeight / 2 - int2Float stageY)
             $ Color orange
             $ Polygon
-            $ rectanglePath problem.problemStageWidth problem.problemStageHeight
+            $ rectanglePath (int2Float problem.problemStageWidth) (int2Float problem.problemStageHeight)
     (stageX, stageY) = problem.problemStageBottomLeft
 
 renderProblem :: Problem -> Solution -> IO ()
