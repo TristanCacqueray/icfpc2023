@@ -10,7 +10,7 @@ attendeeSize :: Float
 attendeeSize = 3
 
 drawProblem :: Problem -> Solution -> Picture
-drawProblem problem solution = Pictures (room : stage : (musicians <> attendees))
+drawProblem problem solution = Pictures (room : stage : (pillars <> musicians <> attendees))
   where
     room =
         Color red $
@@ -18,6 +18,9 @@ drawProblem problem solution = Pictures (room : stage : (musicians <> attendees)
     topX, topY :: Float
     topX = -1 * fromIntegral problem.problemRoomWidth / 2
     topY = fromIntegral problem.problemRoomHeight / 2
+
+    pillars = map drawPillar problem.problemPillars
+    drawPillar (Pillar (px, py) radius) = Translate (topX + fromIntegral px) (topY - fromIntegral py) $ Color chartreuse $ Circle (fromIntegral radius)
 
     musicians = map drawMusician (UV.toList solution.solutionPlacements)
     drawMusician (x, y) = Translate (topX + fromIntegral x) (topY - fromIntegral y) $ Circle 10

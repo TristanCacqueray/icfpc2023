@@ -8,7 +8,7 @@ Run the tool `cabal run -O2 progcon -- --help`
 
 - Submit an existing solution: `progcon submit 42`
 
-- Visualize a solution: `progcon render ./problems/42-problem.json ./problems/42-solution.json`
+- Visualize a solution: `progcon render ./problems/42-*`
 
 - Run test: `progcon test`
 
