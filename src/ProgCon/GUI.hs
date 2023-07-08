@@ -1,10 +1,43 @@
 module ProgCon.GUI where
 
-import Graphics.Gloss
 import Data.Vector.Unboxed qualified as UV
 import GHC.Float (int2Float)
+import Graphics.Gloss hiding (scale)
+import Graphics.Gloss.Interface.IO.Animate qualified as GlossIO
+import RIO hiding (display)
 
+import Control.Concurrent (forkIO)
 import ProgCon.Syntax
+
+newtype ProblemRenderer = ProblemRenderer (IORef (Maybe Picture))
+
+withRenderer :: (ProblemRenderer -> IO ()) -> IO ()
+withRenderer cb = do
+    pictureRef <- newIORef Nothing
+    let makePicture :: IO Picture
+        makePicture = do
+            mPicture <- readIORef pictureRef
+            pure $ fromMaybe (Text "Loading...") mPicture
+
+    GlossIO.animateIO disp bg (const makePicture) \_controller -> do
+        cb (ProblemRenderer pictureRef)
+  where
+    disp = InWindow "ICFP Contest 2023" (winX, winY) (10, 10)
+    bg = makeColor 0.6 0.6 0.6 1.0
+
+winX, winY :: Int
+(winX, winY) = (1024, 1024)
+
+renderProblem :: MonadIO m => Problem -> Solution -> ProblemRenderer -> m ()
+renderProblem problem solution (ProblemRenderer pref) = do
+    let scale
+            | problem.problemRoomHeight > problem.problemRoomWidth =
+                fromIntegral winY / fromIntegral problem.problemRoomHeight
+            | otherwise = fromIntegral problem.problemRoomWidth / fromIntegral winX
+        pscale = scale * 0.98
+    writeIORef pref $ Just $ Scale pscale pscale $ drawProblem problem solution
+
+-- liftIO controller.controllerSetRedraw
 
 attendeeSize :: Float
 attendeeSize = 3
@@ -35,12 +68,3 @@ drawProblem problem solution = Pictures (room : stage : (pillars <> musicians <>
             $ Polygon
             $ rectanglePath (int2Float problem.problemStageWidth) (int2Float problem.problemStageHeight)
     (stageX, stageY) = problem.problemStageBottomLeft
-
-renderProblem :: Problem -> Solution -> IO ()
-renderProblem problem solution = do
-    display (InWindow "ICFP Contest 2023" (round wx, round wy) (10, 10)) white (absScale $ drawProblem problem solution)
-  where
-    absScale = Scale (pscale * 0.98) (pscale * 0.98)
-    wx, wy, pscale :: Float
-    (wx, wy) = (fromIntegral problem.problemRoomWidth * pscale, fromIntegral problem.problemRoomHeight * pscale)
-    pscale = 1 / 5

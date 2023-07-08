@@ -1,6 +1,7 @@
 module ProgCon (main) where
 
-import Control.Monad
+import RIO
+import Control.Concurrent
 import Data.Vector.Unboxed qualified as UV
 import Say
 import SimpleCmdArgs
@@ -8,7 +9,7 @@ import System.Directory (doesFileExist)
 
 import ProgCon.API
 import ProgCon.Eval
-import ProgCon.GUI (renderProblem)
+import ProgCon.GUI
 import ProgCon.Parser
 import ProgCon.Solve
 import ProgCon.Syntax
@@ -38,8 +39,8 @@ loadSolution pid = doesFileExist solutionFP >>= \case
   where
     solutionFP = solutionPath pid
 
-mainSolve :: Bool -> ProblemID -> IO ()
-mainSolve autoSubmit pid = do
+mainSolve :: Bool -> Maybe ProblemRenderer -> ProblemID -> IO ()
+mainSolve autoSubmit renderer pid = do
     mPrevSolution <- loadSolution pid
     problemDesc <- loadProblem pid
     let debug msg = sayString $ show problemDesc.name <> ": " <> msg
@@ -50,7 +51,7 @@ mainSolve autoSubmit pid = do
           Nothing -> minBound
           Just prevSolution -> prevSolution.score
 
-    mSolution <- solve mPrevSolution problemDesc
+    mSolution <- solve renderer mPrevSolution problemDesc
     case mSolution of
       Just solution
         | solution.score > prevScore -> do
@@ -64,11 +65,14 @@ mainSolve autoSubmit pid = do
             sayString $ show problemDesc.name <> ": done, not a highscore: " <> show solution.score <> ", prev was: " <> show prevScore
       Nothing -> sayString $ show problemDesc.name <> ": couldn't find a solution!"
 
-mainSolver :: Bool -> [ProblemID] -> IO ()
-mainSolver autoSubmit = mapM_ (mainSolve autoSubmit)
+mainSolver :: Bool -> Bool -> [ProblemID] -> IO ()
+mainSolver autoSubmit withGUI pids
+  | withGUI = withRenderer \renderer -> do
+       mapM_ (mainSolve autoSubmit (Just renderer)) pids
+  | otherwise = mapM_ (mainSolve autoSubmit Nothing) pids
 
 mainRender :: ProblemID -> FilePath -> IO ()
-mainRender pid solutionFP = do
+mainRender pid solutionFP = withRenderer \renderer -> do
     problemDesc <- loadProblem pid
     let problem = problemDesc.problem
     solutionDesc <- loadSolutionPath solutionFP
@@ -79,7 +83,7 @@ mainRender pid solutionFP = do
     putStrLn $ "stagePos: " <> show problem.problemStageBottomLeft
     let score = scoreHappiness problemDesc solution
     putStrLn $ "Score: " <> show score
-    renderProblem problemDesc.problem solution
+    renderProblem problemDesc.problem solution renderer
 
 -- FIXME merge into check
 mainTest :: IO ()
@@ -95,6 +99,7 @@ main =
   [ Subcommand "solve" "solve problem and --submit if new highscore" $
     mainSolver
     <$> switchLongWith "submit" "auto submit when done"
+    <*> switchLongWith "gui" "render progress"
     <*> some intArg
   , Subcommand "submit" "submit problem solution" $
     submitOne False

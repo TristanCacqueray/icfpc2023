@@ -53,7 +53,7 @@ executable progcon
   main-is:             Main.hs
   other-modules:       Paths_progcon
   hs-source-dirs:      app
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -with-rtsopts=-qg -with-rtsopts=-xn -with-rtsopts=-A128m -O2
+  ghc-options:         -O2 -threaded -rtsopts
   build-depends:       base < 5,
                        progcon
 
@@ -73,6 +73,7 @@ library
                      , http-conduit
                      , http-query
                      , http-types
+                     , rio
                      , say
                      , simple-cmd-args
                      , text < 3
