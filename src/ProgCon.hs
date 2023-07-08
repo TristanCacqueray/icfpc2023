@@ -60,6 +60,7 @@ saveSolve pos = do
             sayString $ desc.name <> ": COMPLETED, new highscore: " <> show score
             Aeson.encodeFile scorePath score
             Aeson.encodeFile solutionPath solution
+            submitOne False pos
         else do
             sayString $ desc.name <> ": done, not a highscore: " <> show score <> ", prev was: " <> show prevScore
   where
