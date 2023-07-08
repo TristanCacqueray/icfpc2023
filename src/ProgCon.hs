@@ -10,6 +10,7 @@ import System.Directory (doesFileExist)
 import System.FilePath (takeBaseName)
 
 import Control.Concurrent.Async (mapConcurrently_)
+import ProgCon.API
 import ProgCon.Eval
 import ProgCon.GUI (renderProblem)
 import ProgCon.Parser
@@ -124,6 +125,8 @@ main =
     <$> intArg
   , Subcommand "submit-all" "submit all solutions" $
     pure submitAll
+  , Subcommand "userboard" "get userboard data" $
+    pure userBoard
   ]
   where
     intArg :: Parser Int
