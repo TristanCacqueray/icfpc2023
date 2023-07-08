@@ -58,24 +58,23 @@ executable progcon
 library
   import:              common
   build-depends:       base < 5
-                     , aeson < 3
-                     , directory < 3
-                     , bytestring < 3
-                     , gloss < 2
                      , MonadRandom < 3
-                     , simple-cmd-args
-                     , vector < 3
-                     , text < 3
-                     , vector-shuffling < 3
-
+                     , aeson < 3
+                     , async
+                     , bytestring < 3
+                     , directory < 3
                      , extra
                      , filepath
-                     , say
-                     , async
-                     , time
+                     , gloss < 2
                      , http-client
                      , http-client-tls
                      , http-types
+                     , say
+                     , simple-cmd-args
+                     , text < 3
+                     , time
+                     , vector < 3
+                     , vector-shuffling < 3
 
   exposed-modules:     ProgCon
                      , ProgCon.Eval
