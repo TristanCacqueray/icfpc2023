@@ -166,15 +166,14 @@ geneticSolve mRenderer mPrevSolution problemDesc
                     forM_ mRenderer \renderer -> liftIO do
                         solution <- toSolution musicianCount sd.genPlacements
                         renderProblem problem solution renderer
+                        -- FIX: without this delay, the gloss ui is not refreshing :/
+                        liftIO $ threadDelay 1_000_000
+
                 pure sd.score
             _ -> pure minBound
         liftIO do
             now <- getCurrentTime
             sayString $ printf "%s %s: gen %2d - %10d" (take 25 $ iso8601Show now) (show problemDesc.name) (genCount - count + 1) best
-
-        when True do
-            -- FIX: without this delay, the gloss ui is not refreshing :/
-            liftIO $ threadDelay 1_000_000
 
         -- Repeat the process, keeping only the best seed.
         go (count - 1) (take seedCount populationOrdered)
