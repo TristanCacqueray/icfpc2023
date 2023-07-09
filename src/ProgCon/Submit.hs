@@ -99,7 +99,7 @@ submitOne lenient pid = do
     solutionFP = solutionPath pid
 
 submitAll :: IO ()
-submitAll = traverse_ trySubmit [1 .. 55]
+submitAll = traverse_ trySubmit [1 .. 90]
   where
     skip = []
     trySubmit :: Int -> IO ()
