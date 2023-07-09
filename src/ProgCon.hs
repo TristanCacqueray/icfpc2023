@@ -14,6 +14,8 @@ import ProgCon.Parser
 import ProgCon.Solve
 import ProgCon.Syntax
 import ProgCon.Submit
+import Data.List (sortOn)
+import Text.Printf (printf)
 
 main :: IO ()
 main =
@@ -26,6 +28,8 @@ main =
     <*> switchWith 'g' "gui" "render progress"
     <*> paramsArg
     <*> some intArg
+  , Subcommand "driver" "try to find the next problem to solve" $
+    pure mainDriver
   , Subcommand "submit" "submit problem solution" $
     submitOne False
     <$> intArg
@@ -175,11 +179,24 @@ mainPlacements pid = withRenderer \renderer -> do
     solution <- fromSolutionDesc solutionDesc
     renderProblem problemDesc.problem solution renderer
 
+mainDriver :: IO ()
+mainDriver = do
+  solutions <- sortProblemByScore
+  forM_ solutions \(pid, solution) -> do
+    putStrLn (printf "%d - problem %s" (solution.score) (show pid))
+
+sortProblemByScore :: IO [(ProblemID, SolutionDescription)]
+sortProblemByScore = do
+  allSolutions <- traverse (loadSolutionPath . solutionPath) allProblems
+  pure $ sortOn (\(_pid, s) -> s.score) (zip allProblems allSolutions)
+
+allProblems :: [ProblemID]
+allProblems = filter (/= 38) [1..90]
+
 -- FIXME more filtering
 listProblems :: Bool -> [ProblemID] -> IO ()
 listProblems groups pids =
-  (if null pids then allProblems else return pids) >>=
-  mapM_ showProblem
+  mapM_ showProblem (if null pids then allProblems else pids)
   where
     showProblem :: ProblemID -> IO ()
     showProblem pid = do
@@ -207,6 +224,3 @@ listProblems groups pids =
                else show instrmts
           | groups
           ]
-
-    -- FIXME read from problems/
-    allProblems = return $ map ProblemID [1..90]
