@@ -67,9 +67,10 @@ main =
     paramsArg :: Parser Params
     paramsArg =
       Params
-        <$> optionalWith auto 's' "seed" "SEED" "seed count" 10
-        <*> optionalWith auto 'b' "breed" "BREED" "breed count" 10
-        <*> optionalWith auto 'v' "volume" "VOLUME" "volume mutation count" 10
+        <$> optionalWith auto 's' "seed" "COUNT" "seed count" 10
+        <*> optionalWith auto 'b' "breed" "COUNT" "breed count" 10
+        <*> optionalWith auto 'v' "volume" "COUNT" "volume mutation count" 10
+        <*> optionalWith auto 'p' "placement" "COUNT" "placement mutation count" 5
         <*> optionalWith auto 'c' "gen" "COUNT" "number of gen" 20
         <*> switchWith 'o' "only-volumes" "Only mutate the volumes"
 

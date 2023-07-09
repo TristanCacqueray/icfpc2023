@@ -27,6 +27,7 @@ data Params = Params
     { seedCount :: Int
     , breedCount :: Int
     , volumeCount :: Int
+    , placementCount :: Int
     , genCount :: Int
     , onlyVolume :: Bool
     }
