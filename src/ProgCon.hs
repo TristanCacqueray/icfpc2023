@@ -70,6 +70,8 @@ main =
         <$> optionalWith auto 's' "seed" "SEED" "seed count" 10
         <*> optionalWith auto 'b' "breed" "BREED" "breed count" 10
         <*> optionalWith auto 'v' "volume" "VOLUME" "volume mutation count" 10
+        <*> optionalWith auto 'c' "gen" "COUNT" "number of gen" 20
+        <*> switchWith 'o' "only-volumes" "Only mutate the volumes"
 
 mainCheck :: ProblemID -> Maybe FilePath -> IO ()
 mainCheck pid msolutionFP =

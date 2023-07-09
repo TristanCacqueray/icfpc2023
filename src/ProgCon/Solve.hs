@@ -142,10 +142,9 @@ geneticSolve params mRenderer mPrevSolution problemDesc
                 newSeeds <- parReplicateM (params.seedCount - 1) (randomSolution problemDesc placements)
                 pure $ solution : newSeeds
             Nothing -> parReplicateM params.seedCount (randomSolution problemDesc placements)
-        (newSolution : _) <- go genCount initialSeeds
+        (newSolution : _) <- go params.genCount initialSeeds
         pure (Just newSolution)
   where
-    genCount = 20
     dim = (problem.problemStageWidth, problem.problemStageHeight)
     placements = maximumPlacements problem
     total = UV.length placements
@@ -178,7 +177,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
             _ -> pure minBound
         liftIO do
             now <- getZonedTime
-            sayString $ printf "%s %s: gen%2d score %s" (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now) ('#' : show problemDesc.name) (genCount - count + 1) (showScore best)
+            sayString $ printf "%s %s: gen%2d score %s" (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now) ('#' : show problemDesc.name) (params.genCount - count + 1) (showScore best)
 
         -- Repeat the process, keeping only the best seed.
         go (count - 1) (take params.seedCount populationOrdered)
@@ -193,7 +192,8 @@ geneticSolve params mRenderer mPrevSolution problemDesc
         makeNewSeed :: SolutionDescription -> RandGen SolutionDescription
         makeNewSeed sd = do
             genPlacements <- GenPlacements <$> MV.clone sd.genPlacements.iov
-            doMutate genPlacements
+            unless (params.onlyVolume) do
+               doMutate genPlacements
             genVolumes <- MV.clone sd.genVolumes
             doMutateVolume genVolumes
             score <- scoreSolution problemDesc genPlacements genVolumes
@@ -210,7 +210,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
         -- Shuffle the musician placement randomly
         doMutate :: GenPlacements -> RandGen ()
         doMutate (GenPlacements iov) = do
-            mutationCount <- getRandomR (genCount, MV.length iov `div` 5)
+            mutationCount <- getRandomR (params.genCount, MV.length iov `div` 5)
             replicateM_ mutationCount do
                 -- Pick a random musician
                 musician <- getRandomR (0, musicianCount - 1)

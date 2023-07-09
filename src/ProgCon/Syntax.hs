@@ -27,6 +27,8 @@ data Params = Params
     { seedCount :: Int
     , breedCount :: Int
     , volumeCount :: Int
+    , genCount :: Int
+    , onlyVolume :: Bool
     }
     deriving (Show)
 
