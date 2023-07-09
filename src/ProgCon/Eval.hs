@@ -60,12 +60,28 @@ lineCrossCircle attendee (mx, my) distance radius (px, py) = discriment > 0
 calcDistance :: Attendee -> (Int, Int) -> Int
 calcDistance attendee (px, py) = (attendee.attendeeX - px) ^ (2 :: Int) + (attendee.attendeeY - py) ^ (2 :: Int)
 
+calcDistanceMusician :: (Int, Int) -> (Int, Int) -> Float
+calcDistanceMusician (x, y) (px, py) =
+  let dx = fromIntegral (x - px)
+      dy = fromIntegral (y - py)
+   in sqrt (dx ** 2 + dy ** 2)
+
 -- TODO: add extensions toggle?
 scoreHappiness :: ProblemDescription -> Solution -> Int
 scoreHappiness problemDesc solution = sum allHappiness
   where
     problem = problemDesc.problem
     allHappiness = map (attendeeHappiness problemDesc solution musicianClosenessFactor) problem.problemAttendees
-    musicianClosenessFactor = UV.generate (UV.length problem.problemMusicians) calcClosenessFactor
+    musicianCount = UV.length problem.problemMusicians
+    musicianClosenessFactor = UV.generate musicianCount calcClosenessFactor
     -- Extension 2:
-    calcClosenessFactor _musician = 1 -- TODO
+    calcClosenessFactor musician
+      | problemDesc.name > 0 && problemDesc.name < 56 = 1 -- extension is disabled for the first problems
+      | otherwise = 1 + UV.sum (UV.generate musicianCount calcMusicianDistance)
+      where
+        musicianPos = solution.solutionPlacements UV.! musician
+        calcMusicianDistance otherMusician
+          | otherMusician == musician = 0
+          | otherwise =
+            let d = calcDistanceMusician musicianPos (solution.solutionPlacements UV.! otherMusician)
+             in 1 / d

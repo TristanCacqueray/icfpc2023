@@ -8,7 +8,7 @@ import Data.Vector.Unboxed qualified as UV
 import Text.Printf (printf)
 
 newtype ProblemID = ProblemID Int
-    deriving newtype (Show, ToJSON)
+    deriving newtype (Show, Eq, Ord, Num, ToJSON)
 
 pattern SpecProblem :: ProblemID
 pattern SpecProblem = ProblemID 0
