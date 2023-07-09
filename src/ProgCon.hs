@@ -1,6 +1,7 @@
 module ProgCon (main) where
 
 import RIO
+import Control.Concurrent (forkIO)
 import Data.List.Extra (groupSortOn)
 import Data.Vector.Unboxed qualified as UV
 import Say
@@ -206,10 +207,12 @@ mainDriver = withScheduler_ Par \scheduler -> do
     putStrLn (printf "%13s - %3s minutes old - problem %02s" (showScore solution.score) (show ageSec) (show pid))
     problem <- loadProblem pid
     start_time <- getCurrentTime
-    runRandGen $ mainImprove problem start_time solution 0
+    improved <- runRandGen $ mainImprove problem start_time start_time solution 0
+    when improved do
+      void $ forkIO $ submitOne False True pid
 
-mainImprove :: ProblemDescription -> UTCTime -> SolutionDescription -> Int -> RandGen ()
-mainImprove problemDesc start_time solutionDesc idx = do
+mainImprove :: ProblemDescription -> UTCTime -> UTCTime -> SolutionDescription -> Int -> RandGen Bool
+mainImprove problemDesc initial_time start_time solutionDesc idx = do
   mSolution <- tryImprove problemDesc solutionDesc (toEnum (idx `mod` 3))
   (newTime, newSolution) <- case mSolution of
     Nothing -> pure (start_time, solutionDesc)
@@ -222,7 +225,8 @@ mainImprove problemDesc start_time solutionDesc idx = do
   end_time <- liftIO getCurrentTime
   let elapsed = nominalDiffTimeToSeconds (diffUTCTime end_time start_time)
   when (elapsed < max_time) do
-    mainImprove problemDesc newTime newSolution (idx + 1)
+    void $ mainImprove problemDesc initial_time newTime newSolution (idx + 1)
+  pure $ initial_time /= start_time
  where
    max_time = 30
 
