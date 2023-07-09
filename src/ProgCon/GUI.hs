@@ -46,7 +46,7 @@ renderProblem problem solution renderer = do
     let scale
             | problem.problemRoomHeight > problem.problemRoomWidth =
                 fromIntegral winY / fromIntegral problem.problemRoomHeight
-            | otherwise = fromIntegral problem.problemRoomWidth / fromIntegral winX
+            | otherwise = fromIntegral winX / fromIntegral problem.problemRoomWidth
         pscale = scale * 0.98
     writeIORef renderer.pictureRef $ Just $ Scale pscale pscale $ drawProblem problem solution
     liftIO renderer.controller.controllerSetRedraw
