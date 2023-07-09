@@ -5,6 +5,9 @@ module ProgCon.Solve (
     maximumPlacements,
     randomSolution,
     runRandGen,
+    tryImprove,
+    RandGen,
+    Improvement(..),
 ) where
 
 import Control.Monad.Random.Strict
@@ -129,6 +132,43 @@ maximumPlacements problem =
     toAbsPlacement :: (Grid, Grid) -> (Grid, Grid)
     toAbsPlacement (x, y) = (sx + x, sy + y)
     (sx, sy) = problem.problemStageBottomLeft
+
+data Improvement = Placement | Volume | Both
+  deriving (Enum, Bounded)
+
+-- | This function simply try to improve a given solution by applying a single improvement
+tryImprove :: ProblemDescription -> SolutionDescription -> Improvement -> RandGen (Maybe SolutionDescription)
+tryImprove problemDesc sd improvement = do
+    newSolution <- case improvement of
+      Placement -> do
+        genPlacements <- newPlacements
+        pure $ sd{genPlacements}
+      Volume -> do
+        genVolumes <- newVolumes
+        pure $ sd{genVolumes}
+      Both -> do
+        genPlacements <- newPlacements
+        genVolumes <- newVolumes
+        pure $ sd{genPlacements, genVolumes}
+
+    score <- scoreSolution problemDesc newSolution.genPlacements newSolution.genVolumes
+    pure $ if score > sd.score
+      then Just (newSolution{score})
+      else Nothing
+  where
+    musicianCount = UV.length problemDesc.problem.problemMusicians
+    newPlacements = do
+      iov <- MV.clone sd.genPlacements.iov
+      musician <- getRandomR (0, musicianCount - 1)
+      swapPos <- getRandomR (0, MV.length iov - 1)
+      MV.swap iov musician swapPos
+      pure $ GenPlacements iov
+    newVolumes = do
+      iov <- MV.clone sd.genVolumes
+      musician <- getRandomR (0, musicianCount - 1)
+      volume <- getRandomR (0, 10)
+      MV.write iov musician volume
+      pure iov
 
 geneticSolve :: Params -> Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
 geneticSolve params mRenderer mPrevSolution problemDesc

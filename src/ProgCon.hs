@@ -202,6 +202,28 @@ mainDriver = do
       ageSec :: Integer
       ageSec = truncate (nominalDiffTimeToSeconds $ diffUTCTime now time) `div` 60
     putStrLn (printf "%13s - %3s minutes old - problem %02s" (showScore solution.score) (show ageSec) (show pid))
+    problem <- loadProblem pid
+    start_time <- getCurrentTime
+    runRandGen $ mainImprove problem start_time solution 0
+
+mainImprove :: ProblemDescription -> UTCTime -> SolutionDescription -> Int -> RandGen ()
+mainImprove problemDesc start_time solutionDesc idx = do
+
+  mSolution <- tryImprove problemDesc solutionDesc (toEnum (idx `mod` 3))
+  (newTime, newSolution) <- case mSolution of
+    Nothing -> pure (start_time, solutionDesc)
+    Just sd -> liftIO do
+      sayString $ show problemDesc.name <> ": new highscore: " <> showScore solutionDesc.score <> " -> " <> showScore sd.score <> ", saving..."
+      saveSolutionPath sd (solutionPath problemDesc.name)
+      now <- getCurrentTime
+      pure (now, sd)
+
+  end_time <- liftIO getCurrentTime
+  let elapsed = nominalDiffTimeToSeconds (diffUTCTime end_time start_time)
+  when (elapsed < max_time) do
+    mainImprove problemDesc newTime newSolution (idx + 1)
+ where
+   max_time = 30
 
 sortProblemByScore :: IO [(ProblemID, UTCTime, SolutionDescription)]
 sortProblemByScore = do
