@@ -15,7 +15,7 @@ import System.Directory (doesFileExist)
 import System.Environment
 --import System.Time.Extra (sleep)
 
-import ProgCon.API (retryGET, {-retryPOST-})
+import ProgCon.API (retryGET, retryPOST)
 import ProgCon.Parser (loadSolutionPath)
 import ProgCon.Solve (fromSolutionDesc)
 import ProgCon.Syntax
@@ -24,8 +24,8 @@ newtype SubmitID = SubmitID Text
     deriving newtype (FromJSON)
     deriving (Show)
 
-submit :: ProblemID -> Solution -> IO (Maybe SubmitID)
-submit pid solution = do
+submit :: Bool -> ProblemID -> Solution -> IO (Maybe SubmitID)
+submit resubmit pid solution = do
     let obj = object ["problem_id" .= pid, "contents" .= decodeUtf8 (BSL.toStrict $ encode solution)]
     token <- getEnv "ICFP_TOKEN"
     manager <- newTlsManager
@@ -39,8 +39,7 @@ submit pid solution = do
                     , ("Authorization", "Bearer " <> encodeUtf8 (pack token))
                     ]
                 }
-    -- was: retryPOST
-    response <- httpLbs request manager
+    response <- (if resubmit then retryPOST else id) $ httpLbs request manager
     if statusCode (responseStatus response) == 201
         then pure $ decode (responseBody response)
         else do
@@ -82,8 +81,8 @@ waitFor sid = do
                 BS.putStr $ BS.take 207 resp
                 BS.putStr "\n"
 
-submitOne :: Bool -> ProblemID -> IO ()
-submitOne lenient pid = do
+submitOne :: Bool -> Bool -> ProblemID -> IO ()
+submitOne lenient resubmit pid = do
     hasSolution <- doesFileExist solutionFP
     if not hasSolution
         then unless lenient $ error $ "solution file not found: " ++ solutionFP
@@ -91,7 +90,7 @@ submitOne lenient pid = do
             putStrLn $ "Submitting #" <> show pid
             solutionDesc <- loadSolutionPath solutionFP
             solution <- fromSolutionDesc solutionDesc
-            submit pid solution >>= \case
+            submit resubmit pid solution >>= \case
                 Just sid -> print sid >> putStr "Processing" >> waitFor sid
                 Nothing -> pure ()
   where
@@ -105,4 +104,4 @@ submitAll = traverse_ trySubmit [1 .. 90]
     trySubmit :: Int -> IO ()
     trySubmit pos
         | pos `elem` skip = pure ()
-        | otherwise = submitOne True (ProblemID pos)
+        | otherwise = submitOne False True (ProblemID pos)
