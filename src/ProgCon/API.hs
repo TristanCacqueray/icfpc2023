@@ -19,7 +19,7 @@ accessAPI method params settings expected = do
   token <- getEnv "ICFP_TOKEN"
   withURLQuery (apiServer +/+ method) params $ \req -> do
     response <-
-      retryNetwork $ httpJSON (applyBearerAuth (B8.pack token) $ settings req)
+      retryGET $ httpJSON (applyBearerAuth (B8.pack token) $ settings req)
     if getResponseStatus response == expected
       then return $ Just $ getResponseBody response
       else do
@@ -28,12 +28,19 @@ accessAPI method params settings expected = do
       --print (getResponseBody response :: Object)
       return Nothing
 
-retryNetwork :: IO (Response a) -> IO (Response a)
-retryNetwork act =
+retryGET :: IO (Response a) -> IO (Response a)
+retryGET act =
   recoverAll retrypolicy $ \rs ->
   when (rsIterNumber rs > 0) (putChar '.') >> act
  where
     retrypolicy = exponentialBackoff 750_000 <> limitRetries 10
+
+retryPOST :: IO (Response a) -> IO (Response a)
+retryPOST act =
+  recoverAll retrypolicy $ \rs ->
+  when (rsIterNumber rs > 0) (putChar '.') >> act
+ where
+    retrypolicy = exponentialBackoff 3_000_000 <> limitRetries 5
 
 userBoard:: IO ()
 userBoard = do
