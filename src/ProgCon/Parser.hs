@@ -35,10 +35,11 @@ loadProblemPath pid fp = do
 loadSolutionPath :: FilePath -> IO SolutionDescription
 loadSolutionPath fp = do
     -- NOTE: Keep this tuple in sync with the 'saveSolutionPath'
-    (score, musicianCount, placements) <- loadJSON fp
+    (score, musicianCount, placements, volumes) <- loadJSON fp
     iov <- V.thaw placements
+    genVolumes <- V.thaw volumes
     let genPlacements = GenPlacements iov
-    pure $ SolutionDescription{score, musicianCount, genPlacements}
+    pure $ SolutionDescription{score, musicianCount, genPlacements, genVolumes}
 
 -- | saveSolutionPath serialize MV.IOVector into json array
 saveSolutionPath :: SolutionDescription -> FilePath -> IO ()
@@ -53,6 +54,7 @@ instance ToJSON Solution where
     toJSON Solution{..} =
         object
             [ "placements" .= map toObj (VU.toList solutionPlacements)
+            , "volumes" .= solutionVolumes
             ]
       where
         toObj (x, y) = object ["x" .= x, "y" .= y]
@@ -60,6 +62,7 @@ instance ToJSON Solution where
 instance FromJSON Solution where
     parseJSON (Object v) = do
         arr <- v .: "placements"
+        solutionVolumes <- v .: "volumes"
         solutionPlacements <- VU.fromList <$> traverse fromObj arr
         pure $ Solution{..}
       where

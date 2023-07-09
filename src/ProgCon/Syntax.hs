@@ -66,10 +66,12 @@ data SolutionDescription = SolutionDescription
     { score :: Int
     , musicianCount :: Int
     , genPlacements :: GenPlacements
+    , genVolumes :: MV.IOVector Float
     }
 
 -- | This is the final solution representation to be submitted
-newtype Solution = Solution
+data Solution = Solution
     { solutionPlacements :: UV.Vector (Int, Int)
+    , solutionVolumes :: UV.Vector Float
     }
     deriving (Show, Eq, Ord)

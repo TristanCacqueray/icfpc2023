@@ -21,8 +21,9 @@ attendeeHappiness problemDesc solution musicianClosenessFactor attendee = UV.sum
                 baseImpact :: Int -- round up according to I definition
                 baseImpact = ceiling baseI
                 closenessFactor = musicianClosenessFactor ! musician
+                volume = solution.solutionVolumes ! musician
                 -- round up again according to the new score definition
-             in ceiling $ closenessFactor * fromIntegral baseImpact
+             in ceiling $ volume * closenessFactor * fromIntegral baseImpact
       where
         -- the musician's instrument
         instrument = problemDesc.problem.problemMusicians ! musician

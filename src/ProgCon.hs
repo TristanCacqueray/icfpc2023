@@ -66,7 +66,7 @@ checkScore ::  ProblemID -> Maybe FilePath -> IO Int
 checkScore pid msolutionFP = do
     problemDesc <- loadProblem pid
     solutionDesc <- getSolutionDesc True pid msolutionFP
-    solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
+    solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements solutionDesc.genVolumes
     let happiness = scoreHappiness problemDesc solution
     when (happiness /= solutionDesc.score) $
       putStr $ show solutionDesc.score <> " -> "
@@ -136,7 +136,7 @@ mainRender pid msolutionFP = withRenderer \renderer -> do
     problemDesc <- loadProblem pid
     let problem = problemDesc.problem
     solutionDesc <- getSolutionDesc False pid msolutionFP
-    solution <- toSolution (UV.length problem.problemMusicians) solutionDesc.genPlacements
+    solution <- toSolution (UV.length problem.problemMusicians) solutionDesc.genPlacements solutionDesc.genVolumes
     putStrLn $ "musicians: " <> show (UV.length problem.problemMusicians)
     putStrLn $ "audience: " <> show (length problem.problemAttendees)
     putStrLn $ "pillars: " <> show (length problem.problemPillars)
@@ -167,7 +167,7 @@ mainPlacements pid = withRenderer \renderer -> do
         problemDesc = setMaximumMusician placements baseProblemDesc
     putStrLn $ "total placements: " <> show (UV.length placements)
     solutionDesc <- runRandGen $ randomSolution problemDesc placements
-    solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
+    solution <- fromSolutionDesc solutionDesc
     renderProblem problemDesc.problem solution renderer
 
 -- FIXME more filtering
