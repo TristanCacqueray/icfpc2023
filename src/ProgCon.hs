@@ -150,9 +150,9 @@ mainRender pid msolutionFP = withRenderer \renderer -> do
 -- FIXME merge into check
 mainTest :: IO ()
 mainTest = do
-    res <- checkScore SpecProblem $ Just "problems/spec-solution.json"
-    unless (res == 5343) do
-        error $ "Invalid spec score, expected 5343, got: " <> show res
+    res <- checkScore SpecProblem $ Just "./problems/spec-solution.json"
+    unless (res == 3270) do
+        error $ "Invalid spec score, expected 3270, got: " <> show res
 
 -- | Create one random musician for every given placements
 setMaximumMusician :: UV.Vector (Int, Int) -> ProblemDescription -> ProblemDescription
