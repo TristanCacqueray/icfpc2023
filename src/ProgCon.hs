@@ -150,7 +150,7 @@ mainTest = do
 setMaximumMusician :: UV.Vector (Int, Int) -> ProblemDescription -> ProblemDescription
 setMaximumMusician placements problemDesc = problemDesc{problem}
   where
-    problem = problemDesc.problem{problemMusicians = UV.generate (UV.length placements) (\pos -> pos `mod` 7)}
+    problem = problemDesc.problem{problemMusicians = UV.generate (UV.length placements) (`mod` 7)}
 
 mainPlacements :: ProblemID -> IO ()
 mainPlacements pid = withRenderer \renderer -> do
