@@ -17,7 +17,7 @@ import System.Time.Extra (sleep)
 
 import ProgCon.API (retryGET, retryPOST)
 import ProgCon.Parser (loadSolutionPath)
-import ProgCon.Solve (toSolution)
+import ProgCon.Solve (fromSolutionDesc)
 import ProgCon.Syntax
 
 newtype SubmitID = SubmitID Text
@@ -91,7 +91,7 @@ submitOne lenient pid = do
         else do
             putStrLn $ "Submitting #" <> show pid
             solutionDesc <- loadSolutionPath solutionFP
-            solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
+            solution <- fromSolutionDesc solutionDesc
             submit pid solution >>= \case
                 Just sid -> print sid >> putStr "Processing" >> waitFor sid
                 Nothing -> pure ()

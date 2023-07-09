@@ -1,11 +1,11 @@
 module ProgCon.Solve (
-  solve,
-  toSolution,
-  maximumPlacements,
-  randomSolution,
-  runRandGen
-  )
-where
+    solve,
+    toSolution,
+    fromSolutionDesc,
+    maximumPlacements,
+    randomSolution,
+    runRandGen,
+) where
 
 import Control.Monad.Random.Strict
 import Data.Vector qualified as V
@@ -143,9 +143,9 @@ geneticSolve mRenderer mPrevSolution problemDesc
         (newSolution : _) <- go genCount initialSeeds
         pure (Just newSolution)
   where
-    genCount = 10
-    seedCount = 10
-    breedCount = 10
+    genCount = 5
+    seedCount = 1
+    breedCount = 1
     dim = (problem.problemStageWidth, problem.problemStageHeight)
     placements = maximumPlacements problem
     total = UV.length placements
@@ -171,7 +171,7 @@ geneticSolve mRenderer mPrevSolution problemDesc
                     when False do
                         liftIO $ saveSolutionPath sd (solutionPath problemDesc.name)
                     forM_ mRenderer \renderer -> liftIO do
-                        solution <- toSolution musicianCount sd.genPlacements
+                        solution <- toSolution musicianCount sd.genPlacements sd.genVolumes
                         renderProblem problem solution renderer
                         -- FIX: without this delay, the gloss ui is not refreshing :/
                         liftIO $ threadDelay 1_000_000
@@ -196,8 +196,18 @@ geneticSolve mRenderer mPrevSolution problemDesc
         makeNewSeed sd = do
             genPlacements <- GenPlacements <$> MV.clone sd.genPlacements.iov
             doMutate genPlacements
-            score <- scoreSolution problemDesc genPlacements
-            pure SolutionDescription{score, musicianCount, genPlacements}
+            genVolumes <- MV.clone sd.genVolumes
+            doMutateVolume genVolumes
+            score <- scoreSolution problemDesc genPlacements genVolumes
+            pure SolutionDescription{score, musicianCount, genPlacements, genVolumes}
+
+        doMutateVolume :: MV.IOVector Float -> RandGen ()
+        doMutateVolume iov = do
+            -- mutate a couple of volumes
+            replicateM_ 2 do
+                musician <- getRandomR (0, musicianCount - 1)
+                volume <- getRandomR (0, 10)
+                MV.write iov musician volume
 
         -- Shuffle the musician placement randomly
         doMutate :: GenPlacements -> RandGen ()
@@ -220,19 +230,25 @@ randomSolution problemDesc placements = do
         pure ((), newstdg)
     let genPlacements = GenPlacements iov
         musicianCount = UV.length problemDesc.problem.problemMusicians
-    score <- scoreSolution problemDesc genPlacements
-    pure (SolutionDescription{score, musicianCount, genPlacements})
+    genVolumes <- MV.replicate musicianCount 1
+    score <- scoreSolution problemDesc genPlacements genVolumes
+    pure (SolutionDescription{score, musicianCount, genPlacements, genVolumes})
 
 -- | Create the 'Solution' data from a 'GenPlacements'.
-toSolution :: Int -> GenPlacements -> IO Solution
-toSolution musicianCount (GenPlacements iov) = do
+toSolution :: Int -> GenPlacements -> MV.IOVector Float -> IO Solution
+toSolution musicianCount (GenPlacements iov) ioVolumes = do
     xs <- UV.convert <$> V.freeze iov
-    pure $ Solution $ UV.take musicianCount xs
+    volumes <- UV.convert <$> V.freeze ioVolumes
+    pure $ Solution (UV.take musicianCount xs) volumes
+
+fromSolutionDesc :: SolutionDescription -> IO Solution
+fromSolutionDesc solutionDesc =
+    toSolution solutionDesc.musicianCount solutionDesc.genPlacements solutionDesc.genVolumes
 
 -- | Compute the score of a 'GenPlacements'.
-scoreSolution :: ProblemDescription -> GenPlacements -> RandGen Int
-scoreSolution problemDesc gs = do
-    solution <- liftIO (toSolution (UV.length problemDesc.problem.problemMusicians) gs)
+scoreSolution :: ProblemDescription -> GenPlacements -> MV.IOVector Float -> RandGen Int
+scoreSolution problemDesc gs vs = do
+    solution <- liftIO (toSolution (UV.length problemDesc.problem.problemMusicians) gs vs)
     pure $ scoreHappiness problemDesc solution
 
 -- | Helper to run the MonadRandom.
