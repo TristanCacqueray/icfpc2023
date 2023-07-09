@@ -24,6 +24,7 @@ import ProgCon.Parser (saveSolutionPath)
 import ProgCon.Syntax
 import Say
 import Text.Printf (printf)
+
 -- import RIO (replicateConcurrently)
 
 solve :: Params -> Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
@@ -177,7 +178,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
             _ -> pure minBound
         liftIO do
             now <- getZonedTime
-            sayString $ printf "%s %s: gen%2d score %d" (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now) ('#' : show problemDesc.name) (genCount - count + 1) best
+            sayString $ printf "%s %s: gen%2d score %d" (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now) ('#' : show problemDesc.name) (genCount - count + 1) (showScore best)
 
         -- Repeat the process, keeping only the best seed.
         go (count - 1) (take params.seedCount populationOrdered)
@@ -257,6 +258,6 @@ runRandGen action = do
 
 parReplicateM :: Int -> RandGen a -> RandGen [a]
 parReplicateM count action = do
-  -- that doesn't seem to work
-  -- liftIO $ replicateConcurrently count (runRandGen action)
-  replicateM count action
+    -- that doesn't seem to work
+    -- liftIO $ replicateConcurrently count (runRandGen action)
+    replicateM count action
