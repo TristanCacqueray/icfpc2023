@@ -13,6 +13,7 @@ import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types.Status (statusCode)
 import System.Directory (doesFileExist)
 import System.Environment
+import SimpleCmd.Git qualified
 --import System.Time.Extra (sleep)
 
 import ProgCon.API (retryGET, retryPOST)
@@ -63,18 +64,19 @@ getInfo (SubmitID sid) = do
     response <- retryGET $ httpLbs request manager
     pure $ BSL.toStrict $ responseBody response
 
-waitFor :: SubmitID -> IO ()
-waitFor sid = do
+waitFor :: ProblemID -> SubmitID -> IO ()
+waitFor pid sid = do
     resp <- getInfo sid
     if
             | "Processing" `BS.isInfixOf` resp -> do
                 putChar '.'
                 threadDelay 5_000_000
-                waitFor sid
+                waitFor pid sid
             | "Success" `BS.isInfixOf` resp -> do
                 BS.putStr "\n"
                 BS.putStr $ BS.take 141 resp
                 BS.putStr "\n"
+                putStrLn =<< SimpleCmd.Git.git "add" [solutionPath pid]
             | otherwise -> do
                 BS.putStr "\n"
                 BS.putStr "!! FAILURE: "
@@ -91,7 +93,7 @@ submitOne lenient resubmit pid = do
             solutionDesc <- loadSolutionPath solutionFP
             solution <- fromSolutionDesc solutionDesc
             submit resubmit pid solution >>= \case
-                Just sid -> print sid >> putStr "Processing" >> waitFor sid
+                Just sid -> print sid >> putStr "Processing" >> waitFor pid sid
                 Nothing -> pure ()
   where
     solutionFP :: FilePath

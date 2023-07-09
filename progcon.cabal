@@ -78,6 +78,7 @@ library
                      , retry
                      , say
                      , simple-cmd-args
+                     , simple-cmd
                      , text < 3
                      , time
                      , vector < 3
