@@ -15,7 +15,7 @@ import System.Directory (doesFileExist)
 import System.Environment
 import System.Time.Extra (sleep)
 
-import ProgCon.API (retryNetwork)
+import ProgCon.API (retryGET, retryPOST)
 import ProgCon.Parser (loadSolutionPath)
 import ProgCon.Solve (toSolution)
 import ProgCon.Syntax
@@ -40,7 +40,7 @@ submit pid solution = do
                     ]
                 }
     -- was: retryNetwork
-    response <- httpLbs request manager
+    response <- retryPOST $ httpLbs request manager
     if statusCode (responseStatus response) == 201
         then pure $ decode (responseBody response)
         else do
@@ -62,7 +62,7 @@ getInfo (SubmitID sid) = do
                     , ("Authorization", "Bearer " <> encodeUtf8 (pack token))
                     ]
                 }
-    response <- retryNetwork $ httpLbs request manager
+    response <- retryGET $ httpLbs request manager
     pure $ BSL.toStrict $ responseBody response
 
 waitFor :: SubmitID -> IO ()
