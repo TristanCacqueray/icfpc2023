@@ -33,7 +33,11 @@ attendeeHappiness problemDesc solution musicianClosenessFactor attendee = UV.sum
        -- … by a pillar (Extension 1)?
        isBlockedPillar = UV.any checkBlockedPillar problemDesc.pillars
        checkBlockedPillar :: (Int, Int, Int) -> Bool
-       checkBlockedPillar (_px, _py, _radius) = False -- TODO
+       checkBlockedPillar (px, py, radius) = isCrossed
+         where
+           otherPlacement = (px, py)
+           otherDistance = calcDistance attendee otherPlacement
+           isCrossed = lineCrossCircle attendee placement otherDistance radius otherPlacement
 
        -- … by another musician?
        isBlockedMusician = UV.any checkBlocked solution.solutionPlacements
@@ -41,16 +45,17 @@ attendeeHappiness problemDesc solution musicianClosenessFactor attendee = UV.sum
        checkBlocked otherPlacement = otherDistance < distance && isCrossed
         where
           otherDistance = calcDistance attendee otherPlacement
-          isCrossed =
-            -- See: https://mathworld.wolfram.com/Circle-LineIntersection.html
-            let
-              radius = 5 :: Int
-              (px, py) = otherPlacement
+          isCrossed = lineCrossCircle attendee placement otherDistance 5 otherPlacement
+
+-- | Check if the line between two points is blocked by a third point of a given radius (exclusive).
+-- See: https://mathworld.wolfram.com/Circle-LineIntersection.html
+lineCrossCircle :: Attendee -> (Int, Int) -> Int -> Int -> (Int, Int) -> Bool
+lineCrossCircle attendee (mx, my) distance radius (px, py) = discriment > 0
+  where
               (x1, y1) = (attendee.attendeeX - px, attendee.attendeeY - py)
-              (x2, y2) = (fst placement - px, snd placement - py)
+              (x2, y2) = (mx - px, my - py)
               d = x1 * y2 - x2 * y1
-              discriment = radius * radius * otherDistance - d * d
-             in discriment > 0
+              discriment = radius * radius * distance - d * d
 
 calcDistance :: Attendee -> (Int, Int) -> Int
 calcDistance attendee (px, py) = (attendee.attendeeX - px) ^ (2 :: Int) + (attendee.attendeeY - py) ^ (2 :: Int)
