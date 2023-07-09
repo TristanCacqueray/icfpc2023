@@ -26,10 +26,9 @@ solutionPath pid = problemBase pid <> "-solution.json"
 data Params = Params
     { seedCount :: Int
     , breedCount :: Int
+    , genCount :: Int
     , volumeCount :: Int
     , placementCount :: Int
-    , genCount :: Int
-    , onlyVolume :: Bool
     }
     deriving (Show)
 

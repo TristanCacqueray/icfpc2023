@@ -69,10 +69,9 @@ main =
       Params
         <$> optionalWith auto 's' "seed" "COUNT" "seed count" 10
         <*> optionalWith auto 'b' "breed" "COUNT" "breed count" 10
+        <*> optionalWith auto 'c' "gen" "COUNT" "number of gen" 20
         <*> optionalWith auto 'v' "volume" "COUNT" "volume mutation count" 10
         <*> optionalWith auto 'p' "placement" "COUNT" "placement mutation count" 5
-        <*> optionalWith auto 'c' "gen" "COUNT" "number of gen" 20
-        <*> switchWith 'o' "only-volumes" "Only mutate the volumes"
 
 mainCheck :: ProblemID -> Maybe FilePath -> IO ()
 mainCheck pid msolutionFP =
