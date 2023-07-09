@@ -15,7 +15,6 @@ import Data.Vector qualified as V
 import Data.Vector.Mutable qualified as MV
 import Data.Vector.Unboxed qualified as UV
 import Data.Vector.Unboxed qualified as VU
-import Say (sayString)
 
 loadJSON :: FromJSON a => FilePath -> IO a
 loadJSON fp =
@@ -59,7 +58,7 @@ saveSolutionPath solutionDesc fp = do
     -- NOTE: Keep this tuple in sync with the 'loadSolutionPath'
     let tup = (solutionDesc.score, solutionDesc.musicianCount, arr, vol)
     Aeson.encodeFile fp tup
-    sayString $ "saved " <> fp
+    -- sayString $ "saved " <> fp
 
 instance ToJSON Solution where
     toJSON Solution{..} =
