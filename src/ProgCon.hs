@@ -51,6 +51,7 @@ main =
     listProblems
     <$> optional (flagWith' True 's' "solved" "list problems with solutions"
                   <|> flagWith' False 'u' "unsolved" "list problems without solutions")
+    <*> switchWith 'g' "groups" "show sizes of instrument groups"
     <*> many intArg
   ]
   where
@@ -170,8 +171,8 @@ mainPlacements pid = withRenderer \renderer -> do
     renderProblem problemDesc.problem solution renderer
 
 -- FIXME more filtering
-listProblems :: Maybe Bool -> [ProblemID] -> IO ()
-listProblems msolved pids =
+listProblems :: Maybe Bool -> Bool -> [ProblemID] -> IO ()
+listProblems msolved groups pids =
   (if null pids then allProblems else return pids) >>=
   mapM_ showProblem
   where
@@ -187,16 +188,20 @@ listProblems msolved pids =
         let problem = problemDesc.problem
             musicians = problem.problemMusicians
         putStrLn $
-          unwords ['#' : show pid
-                  ,"audience:" <> show (length problem.problemAttendees)
-                  ,"pillars:" <> show (length problem.problemPillars)
-                  ,"musicians:" <> show (UV.length musicians)
-                  ,"instruments:" <>
-                   let instrmts = (map length . groupSortOn id . UV.toList) musicians
-                   in if all (==1) instrmts
-                   then "unique" -- was "solos"
-                   else show instrmts
-                  ]
+          unwords $
+          ['#' : show pid
+          ,"audience:" <> show (length problem.problemAttendees)
+          ,"pillars:" <> show (length problem.problemPillars)
+          ,"musicians:" <> show (UV.length musicians)
+          ]
+          ++
+          ["instruments:" <>
+            let instrmts = (map length . groupSortOn id . UV.toList) musicians
+            in if all (==1) instrmts
+               then "unique" -- was "solos"
+               else show instrmts
+          | groups
+          ]
 
     -- FIXME read from problems/
     allProblems = return $ map ProblemID [1..90]
