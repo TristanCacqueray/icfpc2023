@@ -16,10 +16,9 @@ attendeeHappiness problemDesc solution musicianClosenessFactor attendee = UV.sum
     musicianImpact !musician placement
       | isBlocked = 0
       | otherwise =
-        let (d,m) = (1_000_000 * taste) `divMod` distance
-            baseImpact = d + if m > 0 then 1 else 0
+        let baseImpact = fromIntegral (1_000_000 * taste) / fromIntegral distance
             closenessFactor = musicianClosenessFactor ! musician
-        in ceiling $ closenessFactor * fromIntegral baseImpact
+        in ceiling $ closenessFactor * baseImpact
      where
        -- the musician's instrument
        instrument = problemDesc.problem.problemMusicians ! musician
@@ -74,7 +73,7 @@ scoreHappiness problemDesc solution = sum allHappiness
     allHappiness = map (attendeeHappiness problemDesc solution musicianClosenessFactor) problem.problemAttendees
     musicianCount = UV.length problem.problemMusicians
     musicianClosenessFactor = UV.generate musicianCount calcClosenessFactor
-    -- Extension 2:
+    -- Extension 2: we pre-compute all the factor in advance
     calcClosenessFactor musician
       | problemDesc.name > 0 && problemDesc.name < 56 = 1 -- extension is disabled for the first problems
       | otherwise = 1 + UV.sum (UV.generate musicianCount calcMusicianDistance)
