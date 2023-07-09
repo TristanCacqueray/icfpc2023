@@ -79,7 +79,7 @@ loadSolution :: ProblemID -> IO (Maybe SolutionDescription)
 loadSolution pid = doesFileExist solutionFP >>= \case
   True -> do
     solutionDesc <- loadSolutionPath solutionFP
-    sayString $ show pid <> ": reloading from " <> solutionFP <> " (score: " <> show solutionDesc.score
+    sayString $ show pid <> ": loading " <> solutionFP <> " (score: " <> show solutionDesc.score <> ")"
     pure (Just solutionDesc)
   False -> pure Nothing
   where
@@ -91,7 +91,7 @@ mainSolve autoSubmit renderer pid = do
     problemDesc <- loadProblem pid
     let debug msg = sayString $ show problemDesc.name <> ": " <> msg
 
-    debug $ "starting... musician count: " <> show (UV.length problemDesc.problem.problemMusicians)
+    debug $ "starting... (" <> show (UV.length problemDesc.problem.problemMusicians) <> "musicians)"
 
     let prevScore = case mPrevSolution of
           Nothing -> minBound
@@ -124,6 +124,8 @@ mainRender pid msolutionFP = withRenderer \renderer -> do
     solutionDesc <- getSolutionDesc pid msolutionFP
     solution <- toSolution (UV.length problem.problemMusicians) solutionDesc.genPlacements
     putStrLn $ "musicians: " <> show (UV.length problem.problemMusicians)
+    putStrLn $ "audience: " <> show (length problem.problemAttendees)
+    putStrLn $ "pillars: " <> show (length problem.problemPillars)
     putStrLn $ "room: " <> show (problem.problemRoomWidth, problem.problemRoomHeight)
     putStrLn $ "stage: " <> show (problem.problemStageWidth, problem.problemStageHeight)
     putStrLn $ "stagePos: " <> show problem.problemStageBottomLeft
