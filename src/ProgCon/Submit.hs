@@ -14,6 +14,7 @@ import System.Time.Extra (sleep)
 
 import Control.Monad (unless)
 import Data.Foldable (traverse_)
+import ProgCon.API (retryNetwork)
 import ProgCon.Parser (loadSolutionPath)
 import ProgCon.Solve (toSolution)
 import ProgCon.Syntax
@@ -38,7 +39,7 @@ submit pid solution = do
                     , ("Authorization", "Bearer " <> encodeUtf8 (pack token))
                     ]
                 }
-    response <- httpLbs request manager
+    response <- retryNetwork $ httpLbs request manager
     if statusCode (responseStatus response) == 201
         then pure $ decode (responseBody response)
         else do
@@ -60,7 +61,7 @@ getInfo (SubmitID sid) = do
                     , ("Authorization", "Bearer " <> encodeUtf8 (pack token))
                     ]
                 }
-    response <- httpLbs request manager
+    response <- retryNetwork $ httpLbs request manager
     pure $ BSL.toStrict $ responseBody response
 
 waitFor :: SubmitID -> IO ()
