@@ -45,6 +45,9 @@ main =
     pure userBoard
   , Subcommand "scoreboard" "get scoreboard data" $
     pure scoreBoard
+  , Subcommand "list" "list problem stats" $
+    listProblems
+    <$> many intArg
   ]
   where
     intArg :: Parser ProblemID
@@ -156,3 +159,21 @@ mainPlacements pid = withRenderer \renderer -> do
     solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
     renderProblem problemDesc.problem solution renderer
 
+listProblems :: [ProblemID] -> IO ()
+listProblems pids =
+  (if null pids then allProblems else return pids) >>=
+  mapM_ showProblem
+  where
+    showProblem :: ProblemID -> IO ()
+    showProblem pid = do
+      problemDesc <- loadProblem pid
+      let problem = problemDesc.problem
+      putStrLn $
+        unwords ['#' : show pid
+                ,"musicians:" <> show (UV.length problem.problemMusicians)
+                ,"pillars:" <> show (length problem.problemPillars)
+                ,"audience:" <> show (length problem.problemAttendees)
+                ]
+
+    -- FIXME read from problems/
+    allProblems = return $ map ProblemID [1..90]
