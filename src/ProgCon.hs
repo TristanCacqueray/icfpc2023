@@ -14,16 +14,27 @@ import ProgCon.Solve
 import ProgCon.Syntax
 import ProgCon.Submit
 
-mainCheck :: ProblemID -> FilePath -> IO ()
-mainCheck pid solutionFP =
-  runCheck pid solutionFP >>= print
+mainCheck :: ProblemID -> Maybe FilePath -> IO ()
+mainCheck pid msolutionFP =
+  runCheck pid msolutionFP >>= print
 
-runCheck ::  ProblemID -> FilePath -> IO Int
-runCheck pid solutionFP = do
+runCheck ::  ProblemID -> Maybe FilePath -> IO Int
+runCheck pid msolutionFP = do
     problemDesc <- loadProblem pid
-    solutionDesc <- loadSolutionPath solutionFP
+    solutionDesc <- getSolutionDesc pid msolutionFP
     solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
     pure (scoreHappiness problemDesc solution)
+
+-- Nothing fails if no existing solution
+getSolutionDesc :: ProblemID -> Maybe FilePath -> IO SolutionDescription
+getSolutionDesc pid mfp =
+  case mfp of
+    Just fp -> loadSolutionPath fp
+    Nothing -> do
+      msd <- loadSolution pid
+      case msd of
+        Just sd -> return sd
+        Nothing -> error $ show pid ++ "-solution.json missing"
 
 loadProblem :: ProblemID -> IO ProblemDescription
 loadProblem pid = loadProblemPath pid (problemPath pid)
@@ -70,11 +81,11 @@ mainSolver autoSubmit withGUI pids
        mapM_ (mainSolve autoSubmit (Just renderer)) pids
   | otherwise = mapM_ (mainSolve autoSubmit Nothing) pids
 
-mainRender :: ProblemID -> FilePath -> IO ()
-mainRender pid solutionFP = withRenderer \renderer -> do
+mainRender :: ProblemID -> Maybe FilePath -> IO ()
+mainRender pid msolutionFP = withRenderer \renderer -> do
     problemDesc <- loadProblem pid
     let problem = problemDesc.problem
-    solutionDesc <- loadSolutionPath solutionFP
+    solutionDesc <- getSolutionDesc pid msolutionFP
     solution <- toSolution (UV.length problem.problemMusicians) solutionDesc.genPlacements
     putStrLn $ "musicians: " <> show (UV.length problem.problemMusicians)
     putStrLn $ "room: " <> show (problem.problemRoomWidth, problem.problemRoomHeight)
@@ -87,7 +98,7 @@ mainRender pid solutionFP = withRenderer \renderer -> do
 -- FIXME merge into check
 mainTest :: IO ()
 mainTest = do
-    res <- runCheck SpecProblem "./problems/spec-solution.json"
+    res <- runCheck SpecProblem $ Just "./problems/spec-solution.json"
     unless (res == 5343) do
         error $ "Invalid spec score, expected 5343, got: " <> show res
 
@@ -122,14 +133,14 @@ main =
   , Subcommand "score" "compute a solution score" $
     mainCheck
     <$> intArg
-    <*> strArg "SOLUTION"
+    <*> optional (strArg "SOLUTION")
   , Subcommand "placements" "draw fake placements" $
     mainPlacements
     <$> intArg
   , Subcommand "render" "start GUI to visualize the problem and solution" $
     mainRender
     <$> intArg
-    <*> strArg "SOLUTION"
+    <*> optional (strArg "SOLUTION")
   , Subcommand "test" "run unit-test" $
     pure mainTest
   , Subcommand "submit-all" "submit all solutions (this need work to check if existing solution are better)" $
