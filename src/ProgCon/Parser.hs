@@ -45,8 +45,9 @@ loadSolutionPath fp = do
 saveSolutionPath :: SolutionDescription -> FilePath -> IO ()
 saveSolutionPath solutionDesc fp = do
     arr <- V.freeze solutionDesc.genPlacements.iov
+    vol <- V.freeze solutionDesc.genVolumes
     -- NOTE: Keep this tuple in sync with the 'loadSolutionPath'
-    let tup = (solutionDesc.score, solutionDesc.musicianCount, arr)
+    let tup = (solutionDesc.score, solutionDesc.musicianCount, arr, vol)
     Aeson.encodeFile fp tup
     sayString $ "saved " <> fp
 
