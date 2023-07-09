@@ -10,6 +10,8 @@ import Network.HTTP.Simple
 import Network.HTTP.Types
 import System.Environment
 
+import ProgCon.Eval (showScore)
+
 apiServer :: String
 apiServer = "https://api.icfpcontest.com"
 
@@ -58,7 +60,7 @@ userBoard = do
             Nothing -> putStrLn $ "failed to get userboard: " ++ show obj
   where
     renderScore (pos,mscore) =
-      putStrLn $ '#' : show pos ++ ": " ++ maybe "null" show mscore
+      putStrLn $ '#' : show pos ++ ": " ++ maybe "null" showScore mscore
 
 scoreBoard :: IO ()
 scoreBoard = do
@@ -84,4 +86,4 @@ scoreBoard = do
       case ranking obj of
         Nothing -> return ()
         Just (score,name) ->
-          putStrLn $ show i ++ ". " ++ show score ++ " " ++ name
+          putStrLn $ show i ++ ". " ++ showScore score ++ " " ++ name

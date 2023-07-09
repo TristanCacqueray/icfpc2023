@@ -165,7 +165,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
         best <- case populationOrdered of
             sd : _ -> do
                 when (sd.score > prevScore) do
-                    sayString $ show problemDesc.name <> ": new highscore: " <> show sd.score <> ", saving..."
+                    sayString $ show problemDesc.name <> ": new highscore: " <> showScore sd.score <> ", saving..."
                     liftIO $ saveSolutionPath sd (solutionPath problemDesc.name)
                     forM_ mRenderer \renderer -> liftIO do
                         solution <- toSolution musicianCount sd.genPlacements sd.genVolumes
