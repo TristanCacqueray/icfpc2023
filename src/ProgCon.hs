@@ -14,6 +14,42 @@ import ProgCon.Solve
 import ProgCon.Syntax
 import ProgCon.Submit
 
+main :: IO ()
+main =
+  simpleCmdArgs Nothing "progcon" "musical concert" $
+  subcommands
+  [ Subcommand "solve" "solve problem and --submit if new highscore" $
+    mainSolver
+    <$> switchWith 's' "submit" "auto submit when done"
+    <*> switchWith 'g' "gui" "render progress"
+    <*> some intArg
+  , Subcommand "submit" "submit problem solution" $
+    submitOne False
+    <$> intArg
+  , Subcommand "score" "compute a solution score" $
+    mainCheck
+    <$> intArg
+    <*> optional (strArg "SOLUTION")
+  , Subcommand "placements" "draw fake placements" $
+    mainPlacements
+    <$> intArg
+  , Subcommand "render" "start GUI to visualize the problem and solution" $
+    mainRender
+    <$> intArg
+    <*> optional (strArg "SOLUTION")
+  , Subcommand "test" "run unit-test" $
+    pure mainTest
+  , Subcommand "submit-all" "submit all solutions (this need work to check if existing solution are better)" $
+    pure submitAll
+  , Subcommand "userboard" "get userboard data" $
+    pure userBoard
+  , Subcommand "scoreboard" "get scoreboard data" $
+    pure scoreBoard
+  ]
+  where
+    intArg :: Parser ProblemID
+    intArg = ProblemID <$> argumentWith auto "NUM"
+
 mainCheck :: ProblemID -> Maybe FilePath -> IO ()
 mainCheck pid msolutionFP =
   runCheck pid msolutionFP >>= print
@@ -118,38 +154,3 @@ mainPlacements pid = withRenderer \renderer -> do
     solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
     renderProblem problemDesc.problem solution renderer
 
-main :: IO ()
-main =
-  simpleCmdArgs Nothing "progcon" "musical concert" $
-  subcommands
-  [ Subcommand "solve" "solve problem and --submit if new highscore" $
-    mainSolver
-    <$> switchWith 's' "submit" "auto submit when done"
-    <*> switchWith 'g' "gui" "render progress"
-    <*> some intArg
-  , Subcommand "submit" "submit problem solution" $
-    submitOne False
-    <$> intArg
-  , Subcommand "score" "compute a solution score" $
-    mainCheck
-    <$> intArg
-    <*> optional (strArg "SOLUTION")
-  , Subcommand "placements" "draw fake placements" $
-    mainPlacements
-    <$> intArg
-  , Subcommand "render" "start GUI to visualize the problem and solution" $
-    mainRender
-    <$> intArg
-    <*> optional (strArg "SOLUTION")
-  , Subcommand "test" "run unit-test" $
-    pure mainTest
-  , Subcommand "submit-all" "submit all solutions (this need work to check if existing solution are better)" $
-    pure submitAll
-  , Subcommand "userboard" "get userboard data" $
-    pure userBoard
-  , Subcommand "scoreboard" "get scoreboard data" $
-    pure scoreBoard
-  ]
-  where
-    intArg :: Parser ProblemID
-    intArg = ProblemID <$> argumentWith auto "NUM"
