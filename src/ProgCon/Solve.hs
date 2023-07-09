@@ -178,7 +178,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
             _ -> pure minBound
         liftIO do
             now <- getZonedTime
-            sayString $ printf "%s %s: gen%2d score %d" (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now) ('#' : show problemDesc.name) (genCount - count + 1) (showScore best)
+            sayString $ printf "%s %s: gen%2d score %s" (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now) ('#' : show problemDesc.name) (genCount - count + 1) (showScore best)
 
         -- Repeat the process, keeping only the best seed.
         go (count - 1) (take params.seedCount populationOrdered)
