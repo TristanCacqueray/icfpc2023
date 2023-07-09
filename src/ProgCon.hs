@@ -109,8 +109,8 @@ main =
   subcommands
   [ Subcommand "solve" "solve problem and --submit if new highscore" $
     mainSolver
-    <$> switchLongWith "submit" "auto submit when done"
-    <*> switchLongWith "gui" "render progress"
+    <$> switchWith 's' "submit" "auto submit when done"
+    <*> switchWith 'g' "gui" "render progress"
     <*> some intArg
   , Subcommand "submit" "submit problem solution" $
     submitOne False
