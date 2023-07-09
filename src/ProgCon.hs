@@ -122,6 +122,7 @@ mainSolver ignoreSoln autoSubmit withGUI params pids
 
 mainSolve :: Bool -> Bool -> Maybe ProblemRenderer -> Params -> ProblemID -> IO ()
 mainSolve ignoreSoln autoSubmit renderer params pid = do
+    start_time <- getCurrentTime
     mPrevSolution <-
       if ignoreSoln then return Nothing else loadSolution False pid
     problemDesc <- loadProblem pid
@@ -138,6 +139,8 @@ mainSolve ignoreSoln autoSubmit renderer params pid = do
           Just prevSolution -> prevSolution.score
 
     mSolution <- solve params renderer mPrevSolution problemDesc
+    end_time <- getCurrentTime
+    debug $ "ran for " <> show @Int (truncate (nominalDiffTimeToSeconds $ diffUTCTime end_time start_time)) <> " seconds"
     case mSolution of
       Just solution
         | solution.score > prevScore -> do
