@@ -1,7 +1,7 @@
 module ProgCon.Eval (scoreHappiness) where
 
-import Data.Vector.Unboxed qualified as UV
 import Data.Vector.Unboxed ((!))
+import Data.Vector.Unboxed qualified as UV
 
 import ProgCon.Syntax
 
@@ -10,55 +10,55 @@ type MusicianClosenessFactor = UV.Vector Float -- is Float necessary?
 attendeeHappiness :: ProblemDescription -> Solution -> MusicianClosenessFactor -> Attendee -> Int
 attendeeHappiness problemDesc solution musicianClosenessFactor attendee = UV.sum musiciansHappiness
   where
-    musiciansHappiness =  UV.imap musicianImpact solution.solutionPlacements
+    musiciansHappiness = UV.imap musicianImpact solution.solutionPlacements
 
     musicianImpact :: Int -> (Int, Int) -> Int
     musicianImpact !musician placement
-      | isBlocked = 0
-      | otherwise =
-        let
-          baseI :: Float
-          baseI = fromIntegral (1_000_000 * taste) / fromIntegral distance
-          baseImpact :: Int -- round up
-          baseImpact = ceiling baseI
-          closenessFactor = musicianClosenessFactor ! musician
-        in ceiling $ closenessFactor * fromIntegral baseImpact
-     where
-       -- the musician's instrument
-       instrument = problemDesc.problem.problemMusicians ! musician
-       -- the attendee taste for this instrument
-       taste = attendee.attendeeTastes ! instrument
-       -- the distance between the attendee and the musician
-       distance = calcDistance attendee placement
-       -- is the musician blocked
-       isBlocked = isBlockedPillar || isBlockedMusician
+        | isBlocked = 0
+        | otherwise =
+            let baseI :: Float
+                baseI = fromIntegral (1_000_000 * taste) / fromIntegral distance
+                baseImpact :: Int -- round up
+                baseImpact = ceiling baseI
+                closenessFactor = musicianClosenessFactor ! musician
+             in ceiling $ closenessFactor * fromIntegral baseImpact
+      where
+        -- the musician's instrument
+        instrument = problemDesc.problem.problemMusicians ! musician
+        -- the attendee taste for this instrument
+        taste = attendee.attendeeTastes ! instrument
+        -- the distance between the attendee and the musician
+        distance = calcDistance attendee placement
+        -- is the musician blocked
+        isBlocked = isBlockedPillar || isBlockedMusician
 
-       -- … by a pillar (Extension 1)?
-       isBlockedPillar = UV.any checkBlockedPillar problemDesc.pillars
-       checkBlockedPillar :: (Int, Int, Int) -> Bool
-       checkBlockedPillar (px, py, radius) = isCrossed
-         where
-           otherPlacement = (px, py)
-           otherDistance = calcDistance attendee otherPlacement
-           isCrossed = lineCrossCircle attendee placement otherDistance radius otherPlacement
+        -- … by a pillar (Extension 1)?
+        isBlockedPillar = UV.any checkBlockedPillar problemDesc.pillars
+        checkBlockedPillar :: (Int, Int, Int) -> Bool
+        checkBlockedPillar (px, py, radius) = isCrossed
+          where
+            otherPlacement = (px, py)
+            otherDistance = calcDistance attendee otherPlacement
+            isCrossed = lineCrossCircle attendee placement otherDistance radius otherPlacement
 
-       -- … by another musician?
-       isBlockedMusician = UV.any checkBlocked solution.solutionPlacements
-       checkBlocked :: (Int, Int) -> Bool
-       checkBlocked otherPlacement = otherDistance < distance && isCrossed
-        where
-          otherDistance = calcDistance attendee otherPlacement
-          isCrossed = lineCrossCircle attendee placement otherDistance 5 otherPlacement
+        -- … by another musician?
+        isBlockedMusician = UV.any checkBlocked solution.solutionPlacements
+        checkBlocked :: (Int, Int) -> Bool
+        checkBlocked otherPlacement = otherDistance < distance && isCrossed
+          where
+            otherDistance = calcDistance attendee otherPlacement
+            isCrossed = lineCrossCircle attendee placement otherDistance 5 otherPlacement
 
--- | Check if the line between two points is blocked by a third point of a given radius (exclusive).
--- See: https://mathworld.wolfram.com/Circle-LineIntersection.html
+{- | Check if the line between two points is blocked by a third point of a given radius (exclusive).
+ See: https://mathworld.wolfram.com/Circle-LineIntersection.html
+-}
 lineCrossCircle :: Attendee -> (Int, Int) -> Int -> Int -> (Int, Int) -> Bool
 lineCrossCircle attendee (mx, my) distance radius (px, py) = discriment > 0
   where
-              (x1, y1) = (attendee.attendeeX - px, attendee.attendeeY - py)
-              (x2, y2) = (mx - px, my - py)
-              d = x1 * y2 - x2 * y1
-              discriment = radius * radius * distance - d * d
+    (x1, y1) = (attendee.attendeeX - px, attendee.attendeeY - py)
+    (x2, y2) = (mx - px, my - py)
+    d = x1 * y2 - x2 * y1
+    discriment = radius * radius * distance - d * d
 
 -- | This return the distance squared
 calcDistance :: Attendee -> (Int, Int) -> Int
@@ -67,9 +67,9 @@ calcDistance attendee (px, py) = (attendee.attendeeX - px) ^ (2 :: Int) + (atten
 -- | This return the regular distance
 calcDistanceMusician :: (Int, Int) -> (Int, Int) -> Float
 calcDistanceMusician (x, y) (px, py) =
-  let dx = fromIntegral (x - px)
-      dy = fromIntegral (y - py)
-   in sqrt (dx ** 2 + dy ** 2)
+    let dx = fromIntegral (x - px)
+        dy = fromIntegral (y - py)
+     in sqrt (dx ** 2 + dy ** 2)
 
 -- TODO: add extensions toggle?
 scoreHappiness :: ProblemDescription -> Solution -> Int
@@ -81,12 +81,12 @@ scoreHappiness problemDesc solution = sum allHappiness
     musicianClosenessFactor = UV.generate musicianCount calcClosenessFactor
     -- Extension 2: we pre-compute all the factor in advance
     calcClosenessFactor musician
-      | problemDesc.name > 0 && problemDesc.name < 56 = 1 -- extension is disabled for the first problems
-      | otherwise = 1 + UV.sum (UV.generate musicianCount calcMusicianDistance)
+        | problemDesc.name > 0 && problemDesc.name < 56 = 1 -- extension is disabled for the first problems
+        | otherwise = 1 + UV.sum (UV.generate musicianCount calcMusicianDistance)
       where
         musicianPos = solution.solutionPlacements UV.! musician
         calcMusicianDistance otherMusician
-          | otherMusician == musician = 0
-          | otherwise =
-            let d = calcDistanceMusician musicianPos (solution.solutionPlacements UV.! otherMusician)
-             in 1 / d
+            | otherMusician == musician = 0
+            | otherwise =
+                let d = calcDistanceMusician musicianPos (solution.solutionPlacements UV.! otherMusician)
+                 in 1 / d
