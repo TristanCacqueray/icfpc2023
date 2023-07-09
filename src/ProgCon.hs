@@ -63,17 +63,18 @@ mainCheck pid msolutionFP =
 checkScore ::  ProblemID -> Maybe FilePath -> IO Int
 checkScore pid msolutionFP = do
     problemDesc <- loadProblem pid
-    solutionDesc <- getSolutionDesc pid msolutionFP
+    solutionDesc <- getSolutionDesc True pid msolutionFP
     solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
     pure (scoreHappiness problemDesc solution)
 
 -- Nothing fails if no existing solution
-getSolutionDesc :: ProblemID -> Maybe FilePath -> IO SolutionDescription
-getSolutionDesc pid mfp =
+getSolutionDesc :: Bool -> ProblemID -> Maybe FilePath
+                -> IO SolutionDescription
+getSolutionDesc quiet pid mfp =
   case mfp of
     Just fp -> loadSolutionPath fp
     Nothing -> do
-      msd <- loadSolution False pid
+      msd <- loadSolution quiet pid
       case msd of
         Just sd -> return sd
         Nothing -> error $ show pid ++ "-solution.json missing"
@@ -129,7 +130,7 @@ mainRender :: ProblemID -> Maybe FilePath -> IO ()
 mainRender pid msolutionFP = withRenderer \renderer -> do
     problemDesc <- loadProblem pid
     let problem = problemDesc.problem
-    solutionDesc <- getSolutionDesc pid msolutionFP
+    solutionDesc <- getSolutionDesc False pid msolutionFP
     solution <- toSolution (UV.length problem.problemMusicians) solutionDesc.genPlacements
     putStrLn $ "musicians: " <> show (UV.length problem.problemMusicians)
     putStrLn $ "audience: " <> show (length problem.problemAttendees)
