@@ -58,10 +58,10 @@ main =
 
 mainCheck :: ProblemID -> Maybe FilePath -> IO ()
 mainCheck pid msolutionFP =
-  runCheck pid msolutionFP >>= print
+  checkScore pid msolutionFP >>= print
 
-runCheck ::  ProblemID -> Maybe FilePath -> IO Int
-runCheck pid msolutionFP = do
+checkScore ::  ProblemID -> Maybe FilePath -> IO Int
+checkScore pid msolutionFP = do
     problemDesc <- loadProblem pid
     solutionDesc <- getSolutionDesc pid msolutionFP
     solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
@@ -144,7 +144,7 @@ mainRender pid msolutionFP = withRenderer \renderer -> do
 -- FIXME merge into check
 mainTest :: IO ()
 mainTest = do
-    res <- runCheck SpecProblem $ Just "./problems/spec-solution.json"
+    res <- checkScore SpecProblem $ Just "./problems/spec-solution.json"
     unless (res == 5343) do
         error $ "Invalid spec score, expected 5343, got: " <> show res
 
