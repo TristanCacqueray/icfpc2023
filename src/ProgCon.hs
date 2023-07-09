@@ -24,6 +24,7 @@ main =
     <$> switchWith 'N' "no-load" "ignore the existing solution"
     <*> switchWith 's' "submit" "auto submit when done"
     <*> switchWith 'g' "gui" "render progress"
+    <*> paramsArg
     <*> some intArg
   , Subcommand "submit" "submit problem solution" $
     submitOne False
@@ -57,6 +58,11 @@ main =
   where
     intArg :: Parser ProblemID
     intArg = ProblemID <$> argumentWith auto "NUM"
+    paramsArg :: Parser Params
+    paramsArg =
+      Params
+        <$> optionalWith auto 's' "seed" "SEED" "seed count" 10
+        <*> optionalWith auto 'b' "breed" "BREED" "breed count" 10
 
 mainCheck :: ProblemID -> Maybe FilePath -> IO ()
 mainCheck pid msolutionFP =
@@ -98,14 +104,14 @@ loadSolution quiet pid = doesFileExist solutionFP >>= \case
   where
     solutionFP = solutionPath pid
 
-mainSolver :: Bool -> Bool -> Bool -> [ProblemID] -> IO ()
-mainSolver ignoreSoln autoSubmit withGUI pids
+mainSolver :: Bool -> Bool -> Bool -> Params -> [ProblemID] -> IO ()
+mainSolver ignoreSoln autoSubmit withGUI params pids
   | withGUI = withRenderer \renderer -> do
-       mapM_ (mainSolve ignoreSoln autoSubmit (Just renderer)) pids
-  | otherwise = mapM_ (mainSolve ignoreSoln autoSubmit Nothing) pids
+       mapM_ (mainSolve ignoreSoln autoSubmit (Just renderer) params) pids
+  | otherwise = mapM_ (mainSolve ignoreSoln autoSubmit Nothing params) pids
 
-mainSolve :: Bool -> Bool -> Maybe ProblemRenderer -> ProblemID -> IO ()
-mainSolve ignoreSoln autoSubmit renderer pid = do
+mainSolve :: Bool -> Bool -> Maybe ProblemRenderer -> Params -> ProblemID -> IO ()
+mainSolve ignoreSoln autoSubmit renderer params pid = do
     mPrevSolution <-
       if ignoreSoln then return Nothing else loadSolution False pid
     problemDesc <- loadProblem pid
@@ -117,7 +123,7 @@ mainSolve ignoreSoln autoSubmit renderer pid = do
           Nothing -> minBound
           Just prevSolution -> prevSolution.score
 
-    mSolution <- solve renderer mPrevSolution problemDesc
+    mSolution <- solve params renderer mPrevSolution problemDesc
     case mSolution of
       Just solution
         | solution.score > prevScore -> do
