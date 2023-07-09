@@ -69,7 +69,7 @@ main =
 
 mainCheck :: ProblemID -> Maybe FilePath -> IO ()
 mainCheck pid msolutionFP =
-  checkScore pid msolutionFP >>= print
+  checkScore pid msolutionFP >>= putStrLn . showScore
 
 checkScore ::  ProblemID -> Maybe FilePath -> IO Int
 checkScore pid msolutionFP = do
@@ -78,7 +78,7 @@ checkScore pid msolutionFP = do
     solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements solutionDesc.genVolumes
     let happiness = scoreHappiness problemDesc solution
     when (happiness /= solutionDesc.score) $
-      putStr $ show solutionDesc.score <> " -> "
+      putStr $ showScore solutionDesc.score <> " -> "
     pure happiness
 
 -- Nothing fails if no existing solution
@@ -101,7 +101,7 @@ loadSolution quiet pid = doesFileExist solutionFP >>= \case
   True -> do
     solutionDesc <- loadSolutionPath solutionFP
     unless quiet $
-      sayString $ show pid <> ": loading " <> solutionFP <> " (score: " <> show solutionDesc.score <> ")"
+      sayString $ show pid <> ": loading " <> solutionFP <> " (score: " <> showScore solutionDesc.score <> ")"
     pure (Just solutionDesc)
   False -> pure Nothing
   where
@@ -134,14 +134,14 @@ mainSolve ignoreSoln autoSubmit renderer params pid = do
     case mSolution of
       Just solution
         | solution.score > prevScore -> do
-            debug $ "COMPLETED, new highscore: " <> show solution.score
+            debug $ "COMPLETED, new highscore: " <> showScore solution.score
             when (solution.score > 0) do
               when (prevScore > minBound) do
-                debug $ "score: " ++ show prevScore ++ " -> " ++ show solution.score
+                debug $ "score: " ++ showScore prevScore ++ " -> " ++ showScore solution.score
               when autoSubmit do
                 submitOne False pid
         | otherwise ->
-            sayString $ show problemDesc.name <> ": done, not a highscore: " <> show solution.score <> ", prev was: " <> show prevScore
+            sayString $ show problemDesc.name <> ": done, not a highscore: " <> showScore solution.score <> ", prev was: " <> showScore prevScore
       Nothing -> sayString $ show problemDesc.name <> ": couldn't find a solution!"
 
 mainRender :: ProblemID -> Maybe FilePath -> IO ()
@@ -157,7 +157,7 @@ mainRender pid msolutionFP = withRenderer \renderer -> do
     putStrLn $ "stage: " <> show (problem.problemStageWidth, problem.problemStageHeight)
     putStrLn $ "stagePos: " <> show problem.problemStageBottomLeft
     let score = scoreHappiness problemDesc solution
-    putStrLn $ "Score: " <> show score
+    putStrLn $ "Score: " <> showScore score
     renderProblem problemDesc.problem solution renderer
 
 -- FIXME merge into check
@@ -219,7 +219,7 @@ listProblems groups pids =
           ,"audience:" <> show (length problem.problemAttendees)
           ,"pillars:" <> show (length problem.problemPillars)
           ,"musicians:" <> show (UV.length musicians)
-          ,"score:" <> show score
+          ,"score:" <> showScore score
           ]
           ++
           ["instruments:" <>

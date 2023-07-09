@@ -67,6 +67,7 @@ library
                      , directory < 3
                      , extra
                      --, filepath
+                     , fmt
                      , gloss < 2
                      , http-client
                      , http-client-tls

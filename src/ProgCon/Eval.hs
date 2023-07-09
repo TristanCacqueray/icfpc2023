@@ -1,7 +1,8 @@
-module ProgCon.Eval (scoreHappiness) where
+module ProgCon.Eval (scoreHappiness, showScore) where
 
 import Data.Vector.Unboxed ((!))
 import Data.Vector.Unboxed qualified as UV
+import Fmt
 
 import ProgCon.Syntax
 
@@ -95,3 +96,6 @@ scoreHappiness problemDesc solution = sum allHappiness
                  in 1 / d
           where
             otherInstrument = problemDesc.problem.problemMusicians UV.! otherMusician
+
+showScore :: Int -> String
+showScore s = "" +| commaizeF s |+ ""
