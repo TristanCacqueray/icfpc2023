@@ -91,14 +91,19 @@ mainTest = do
     unless (res == 5343) do
         error $ "Invalid spec score, expected 5343, got: " <> show res
 
+-- | Create one random musician for every given placements
+setMaximumMusician :: UV.Vector (Int, Int) -> ProblemDescription -> ProblemDescription
+setMaximumMusician placements problemDesc = problemDesc{problem}
+  where
+    problem = problemDesc.problem{problemMusicians = UV.generate (UV.length placements) (\pos -> pos `mod` 7)}
+
 mainPlacements :: ProblemID -> IO ()
 mainPlacements pid = withRenderer \renderer -> do
-    problemDesc <- loadProblem pid
-    let problem = problemDesc.problem
-        placements = maximumPlacements problem
-        setMaxMusician pd = pd{problem=pd.problem{problemMusicians = UV.generate (UV.length placements) (\pos -> pos `mod` 3)}}
+    baseProblemDesc <- loadProblem pid
+    let placements = maximumPlacements problemDesc.problem
+        problemDesc = setMaximumMusician placements baseProblemDesc
     putStrLn $ "total placements: " <> show (UV.length placements)
-    solutionDesc <- runRandGen $ randomSolution (setMaxMusician problemDesc) placements
+    solutionDesc <- runRandGen $ randomSolution problemDesc placements
     solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
     renderProblem problemDesc.problem solution renderer
 
