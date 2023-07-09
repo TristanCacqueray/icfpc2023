@@ -1,4 +1,11 @@
-module ProgCon.Solve where
+module ProgCon.Solve (
+  solve,
+  toSolution,
+  maximumPlacements,
+  randomSolution,
+  runRandGen
+  )
+where
 
 import Control.Monad.Random.Strict
 import Data.Vector qualified as V
