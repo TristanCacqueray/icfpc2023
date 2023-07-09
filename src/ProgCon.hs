@@ -65,7 +65,10 @@ checkScore pid msolutionFP = do
     problemDesc <- loadProblem pid
     solutionDesc <- getSolutionDesc True pid msolutionFP
     solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
-    pure (scoreHappiness problemDesc solution)
+    let happiness = scoreHappiness problemDesc solution
+    when (happiness /= solutionDesc.score) $
+      putStr $ show solutionDesc.score <> " -> "
+    pure happiness
 
 -- Nothing fails if no existing solution
 getSolutionDesc :: Bool -> ProblemID -> Maybe FilePath
