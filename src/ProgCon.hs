@@ -20,7 +20,8 @@ main =
   subcommands
   [ Subcommand "solve" "solve problem and --submit if new highscore" $
     mainSolver
-    <$> switchWith 's' "submit" "auto submit when done"
+    <$> switchWith 'N' "no-load" "ignore the existing solution"
+    <*> switchWith 's' "submit" "auto submit when done"
     <*> switchWith 'g' "gui" "render progress"
     <*> some intArg
   , Subcommand "submit" "submit problem solution" $
@@ -91,9 +92,10 @@ loadSolution quiet pid = doesFileExist solutionFP >>= \case
   where
     solutionFP = solutionPath pid
 
-mainSolve :: Bool -> Maybe ProblemRenderer -> ProblemID -> IO ()
-mainSolve autoSubmit renderer pid = do
-    mPrevSolution <- loadSolution False pid
+mainSolve :: Bool -> Bool -> Maybe ProblemRenderer -> ProblemID -> IO ()
+mainSolve ignoreSoln autoSubmit renderer pid = do
+    mPrevSolution <-
+      if ignoreSoln then return Nothing else loadSolution False pid
     problemDesc <- loadProblem pid
     let debug msg = sayString $ show problemDesc.name <> ": " <> msg
 
@@ -117,11 +119,11 @@ mainSolve autoSubmit renderer pid = do
             sayString $ show problemDesc.name <> ": done, not a highscore: " <> show solution.score <> ", prev was: " <> show prevScore
       Nothing -> sayString $ show problemDesc.name <> ": couldn't find a solution!"
 
-mainSolver :: Bool -> Bool -> [ProblemID] -> IO ()
-mainSolver autoSubmit withGUI pids
+mainSolver :: Bool -> Bool -> Bool -> [ProblemID] -> IO ()
+mainSolver ignoreSoln autoSubmit withGUI pids
   | withGUI = withRenderer \renderer -> do
-       mapM_ (mainSolve autoSubmit (Just renderer)) pids
-  | otherwise = mapM_ (mainSolve autoSubmit Nothing) pids
+       mapM_ (mainSolve ignoreSoln autoSubmit (Just renderer)) pids
+  | otherwise = mapM_ (mainSolve ignoreSoln autoSubmit Nothing) pids
 
 mainRender :: ProblemID -> Maybe FilePath -> IO ()
 mainRender pid msolutionFP = withRenderer \renderer -> do
