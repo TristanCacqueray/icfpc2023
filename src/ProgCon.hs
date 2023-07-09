@@ -20,6 +20,8 @@ import Data.Time (UTCTime, nominalDiffTimeToSeconds)
 import RIO.Directory (getModificationTime)
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
 
+import Control.Scheduler (Comp(Par), withScheduler_, scheduleWork_)
+
 main :: IO ()
 main =
   simpleCmdArgs Nothing "progcon" "musical concert" $
@@ -194,10 +196,10 @@ mainPlacements pid = withRenderer \renderer -> do
     renderProblem problemDesc.problem solution renderer
 
 mainDriver :: IO ()
-mainDriver = do
+mainDriver = withScheduler_ Par \scheduler -> do
   solutions <- sortProblemByScore
   now <- getCurrentTime
-  forM_ solutions \(pid, time, solution) -> do
+  forM_ solutions \(pid, time, solution) -> scheduleWork_ scheduler do
     let
       ageSec :: Integer
       ageSec = truncate (nominalDiffTimeToSeconds $ diffUTCTime now time) `div` 60
@@ -208,7 +210,6 @@ mainDriver = do
 
 mainImprove :: ProblemDescription -> UTCTime -> SolutionDescription -> Int -> RandGen ()
 mainImprove problemDesc start_time solutionDesc idx = do
-
   mSolution <- tryImprove problemDesc solutionDesc (toEnum (idx `mod` 3))
   (newTime, newSolution) <- case mSolution of
     Nothing -> pure (start_time, solutionDesc)
