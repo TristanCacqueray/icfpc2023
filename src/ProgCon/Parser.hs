@@ -12,6 +12,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, (.:), (.=))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types (prependFailure, typeMismatch)
 import Data.Vector qualified as V
+import Data.Vector.Mutable qualified as MV
 import Data.Vector.Unboxed qualified as UV
 import Data.Vector.Unboxed qualified as VU
 import Say (sayString)
@@ -33,13 +34,22 @@ loadProblemPath pid fp = do
 
 -- | loadSolutionPath deserialize json array into MV.IOVector
 loadSolutionPath :: FilePath -> IO SolutionDescription
-loadSolutionPath fp = do
-    -- NOTE: Keep this tuple in sync with the 'saveSolutionPath'
-    (score, musicianCount, placements, volumes) <- loadJSON fp
-    iov <- V.thaw placements
-    genVolumes <- V.thaw volumes
-    let genPlacements = GenPlacements iov
-    pure $ SolutionDescription{score, musicianCount, genPlacements, genVolumes}
+loadSolutionPath fp =
+    Aeson.decodeFileStrict' fp >>= \case
+        Just (score, musicianCount, placements) -> do
+            iov <- V.thaw placements
+            genVolumes <- MV.replicate musicianCount 1
+            let genPlacements = GenPlacements iov
+            pure $ SolutionDescription{score, musicianCount, genPlacements, genVolumes}
+        Nothing -> newFormat
+  where
+    newFormat = do
+        -- NOTE: Keep this tuple in sync with the 'saveSolutionPath'
+        (score, musicianCount, placements, volumes) <- loadJSON fp
+        iov <- V.thaw placements
+        genVolumes <- V.thaw volumes
+        let genPlacements = GenPlacements iov
+        pure $ SolutionDescription{score, musicianCount, genPlacements, genVolumes}
 
 -- | saveSolutionPath serialize MV.IOVector into json array
 saveSolutionPath :: SolutionDescription -> FilePath -> IO ()
