@@ -1,24 +1,24 @@
 module ProgCon.Submit where
 
 import Control.Concurrent (threadDelay)
+import Control.Monad (unless)
 import Data.Aeson
 import Data.ByteString qualified as BS
 import Data.ByteString.Lazy qualified as BSL
+import Data.Foldable (traverse_)
 import Data.Text (Text, pack, unpack)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types.Status (statusCode)
+import System.Directory (doesFileExist)
 import System.Environment
 import System.Time.Extra (sleep)
 
-import Control.Monad (unless)
-import Data.Foldable (traverse_)
 import ProgCon.API (retryNetwork)
 import ProgCon.Parser (loadSolutionPath)
 import ProgCon.Solve (toSolution)
 import ProgCon.Syntax
-import System.Directory (doesFileExist)
 
 newtype SubmitID = SubmitID Text
     deriving newtype (FromJSON)
