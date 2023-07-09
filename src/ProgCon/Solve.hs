@@ -143,9 +143,9 @@ geneticSolve mRenderer mPrevSolution problemDesc
         (newSolution : _) <- go genCount initialSeeds
         pure (Just newSolution)
   where
-    genCount = 5
-    seedCount = 1
-    breedCount = 1
+    genCount = 20
+    seedCount = 10
+    breedCount = 10
     dim = (problem.problemStageWidth, problem.problemStageHeight)
     placements = maximumPlacements problem
     total = UV.length placements
