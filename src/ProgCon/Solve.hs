@@ -210,8 +210,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
         -- Shuffle the musician placement randomly
         doMutate :: GenPlacements -> RandGen ()
         doMutate (GenPlacements iov) = do
-            mutationCount <- getRandomR (params.genCount, MV.length iov `div` 5)
-            replicateM_ mutationCount do
+            replicateM_ params.placementCount do
                 -- Pick a random musician
                 musician <- getRandomR (0, musicianCount - 1)
                 -- Pick a random new position
