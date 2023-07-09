@@ -35,7 +35,8 @@ main =
     pure mainDriver
   , Subcommand "submit" "submit problem solution" $
     submitOne False
-    <$> intArg
+    <$> switchWith 'r' "retry" "retry for network issues"
+    <*> intArg
   , Subcommand "score" "compute a solution score" $
     mainCheck
     <$> intArg
@@ -142,7 +143,7 @@ mainSolve ignoreSoln autoSubmit renderer params pid = do
               when (prevScore > minBound) do
                 debug $ "score: " ++ showScore prevScore ++ " -> " ++ showScore solution.score
               when autoSubmit do
-                submitOne False pid
+                submitOne False False pid
         | otherwise ->
             sayString $ show problemDesc.name <> ": done, not a highscore: " <> showScore solution.score <> ", prev was: " <> showScore prevScore
       Nothing -> sayString $ show problemDesc.name <> ": couldn't find a solution!"
