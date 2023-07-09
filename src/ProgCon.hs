@@ -50,9 +50,7 @@ main =
     pure scoreBoard
   , Subcommand "list" "list problem stats" $
     listProblems
-    <$> optional (flagWith' True 's' "solved" "list problems with solutions"
-                  <|> flagWith' False 'u' "unsolved" "list problems without solutions")
-    <*> switchWith 'g' "groups" "show sizes of instrument groups"
+    <$> switchWith 'g' "groups" "show sizes of instrument groups"
     <*> many intArg
   ]
   where
@@ -178,19 +176,18 @@ mainPlacements pid = withRenderer \renderer -> do
     renderProblem problemDesc.problem solution renderer
 
 -- FIXME more filtering
-listProblems :: Maybe Bool -> Bool -> [ProblemID] -> IO ()
-listProblems msolved groups pids =
+listProblems :: Bool -> [ProblemID] -> IO ()
+listProblems groups pids =
   (if null pids then allProblems else return pids) >>=
   mapM_ showProblem
   where
     showProblem :: ProblemID -> IO ()
     showProblem pid = do
-      dispProb <-
-        case msolved of
-          Just solved ->
-            (if solved then isJust else isNothing) <$> loadSolution True pid
-          Nothing -> return True
-      when dispProb $ do
+      mSolutionDesc <- loadSolution True pid
+      let score = case mSolutionDesc of
+            Nothing -> 0
+            Just solutionDesc -> solutionDesc.score
+      do
         problemDesc <- loadProblem pid
         let problem = problemDesc.problem
             musicians = problem.problemMusicians
@@ -200,6 +197,7 @@ listProblems msolved groups pids =
           ,"audience:" <> show (length problem.problemAttendees)
           ,"pillars:" <> show (length problem.problemPillars)
           ,"musicians:" <> show (UV.length musicians)
+          ,"score:" <> show score
           ]
           ++
           ["instruments:" <>
