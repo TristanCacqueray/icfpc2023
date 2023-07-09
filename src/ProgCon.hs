@@ -93,6 +93,12 @@ loadSolution quiet pid = doesFileExist solutionFP >>= \case
   where
     solutionFP = solutionPath pid
 
+mainSolver :: Bool -> Bool -> Bool -> [ProblemID] -> IO ()
+mainSolver ignoreSoln autoSubmit withGUI pids
+  | withGUI = withRenderer \renderer -> do
+       mapM_ (mainSolve ignoreSoln autoSubmit (Just renderer)) pids
+  | otherwise = mapM_ (mainSolve ignoreSoln autoSubmit Nothing) pids
+
 mainSolve :: Bool -> Bool -> Maybe ProblemRenderer -> ProblemID -> IO ()
 mainSolve ignoreSoln autoSubmit renderer pid = do
     mPrevSolution <-
@@ -119,12 +125,6 @@ mainSolve ignoreSoln autoSubmit renderer pid = do
         | otherwise ->
             sayString $ show problemDesc.name <> ": done, not a highscore: " <> show solution.score <> ", prev was: " <> show prevScore
       Nothing -> sayString $ show problemDesc.name <> ": couldn't find a solution!"
-
-mainSolver :: Bool -> Bool -> Bool -> [ProblemID] -> IO ()
-mainSolver ignoreSoln autoSubmit withGUI pids
-  | withGUI = withRenderer \renderer -> do
-       mapM_ (mainSolve ignoreSoln autoSubmit (Just renderer)) pids
-  | otherwise = mapM_ (mainSolve ignoreSoln autoSubmit Nothing) pids
 
 mainRender :: ProblemID -> Maybe FilePath -> IO ()
 mainRender pid msolutionFP = withRenderer \renderer -> do
