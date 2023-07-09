@@ -5,6 +5,7 @@ import Control.Concurrent (forkIO)
 import Data.List.Extra (groupSortOn)
 import Data.Vector.Unboxed qualified as UV
 import Say
+import Data.Time.Format
 import SimpleCmdArgs
 import System.Directory (doesFileExist)
 
@@ -35,7 +36,8 @@ main =
     <*> paramsArg
     <*> some intArg
   , Subcommand "driver" "try to find the next problem to solve" $
-    pure mainDriver
+    mainDriver
+    <$> argumentWith auto "MAX_TIME"
   , Subcommand "submit" "submit problem solution" $
     submitOne False
     <$> switchWith 'r' "retry" "retry for network issues"
@@ -196,39 +198,45 @@ mainPlacements pid = withRenderer \renderer -> do
     solution <- fromSolutionDesc solutionDesc
     renderProblem problemDesc.problem solution renderer
 
-mainDriver :: IO ()
-mainDriver = withScheduler_ Par \scheduler -> do
+mainDriver :: Int -> IO ()
+mainDriver maxTime = withScheduler_ Par \scheduler -> do
+  putStrLn $ printf "Starting driver with max %d seconds"  maxTime
   solutions <- sortProblemByScore
   now <- getCurrentTime
   forM_ solutions \(pid, time, solution) -> scheduleWork_ scheduler do
     let
       ageSec :: Integer
       ageSec = truncate (nominalDiffTimeToSeconds $ diffUTCTime now time) `div` 60
-    putStrLn (printf "%13s - %3s minutes old - problem %02s" (showScore solution.score) (show ageSec) (show pid))
+    putStrLn $ printf "Trying to improve problem-%02s (%4s minutes old): %13s"
+      (show pid)
+      (show ageSec)
+      (showScore solution.score)
     problem <- loadProblem pid
     start_time <- getCurrentTime
-    improved <- runRandGen $ mainImprove problem start_time start_time solution 0
+    improved <- runRandGen $ mainImprove maxTime problem start_time start_time solution 0
     when improved do
       void $ forkIO $ submitOne False True pid
 
-mainImprove :: ProblemDescription -> UTCTime -> UTCTime -> SolutionDescription -> Int -> RandGen Bool
-mainImprove problemDesc initial_time start_time solutionDesc idx = do
+mainImprove :: Int -> ProblemDescription -> UTCTime -> UTCTime -> SolutionDescription -> Int -> RandGen Bool
+mainImprove maxTime problemDesc initial_time start_time solutionDesc idx = do
   mSolution <- tryImprove problemDesc solutionDesc (toEnum (idx `mod` 3))
   (newTime, newSolution) <- case mSolution of
     Nothing -> pure (start_time, solutionDesc)
     Just sd -> liftIO do
-      sayString $ show problemDesc.name <> ": new highscore: " <> showScore solutionDesc.score <> " -> " <> showScore sd.score <> ", saving..."
-      saveSolutionPath sd (solutionPath problemDesc.name)
       now <- getCurrentTime
+      sayString $ printf "%s problem-%02s: new highscore! %13s (+%d)"
+          (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now)
+          (show problemDesc.name)
+          (showScore solutionDesc.score)
+          (sd.score - solutionDesc.score)
+      saveSolutionPath sd (solutionPath problemDesc.name)
       pure (now, sd)
 
   end_time <- liftIO getCurrentTime
   let elapsed = nominalDiffTimeToSeconds (diffUTCTime end_time start_time)
-  when (elapsed < max_time) do
-    void $ mainImprove problemDesc initial_time newTime newSolution (idx + 1)
-  pure $ initial_time /= start_time
- where
-   max_time = 30
+  if elapsed < fromIntegral maxTime
+    then mainImprove maxTime problemDesc initial_time newTime newSolution (idx + 1)
+    else pure $ initial_time /= start_time
 
 sortProblemByScore :: IO [(ProblemID, UTCTime, SolutionDescription)]
 sortProblemByScore = do
