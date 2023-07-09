@@ -70,7 +70,7 @@ getSolutionDesc pid mfp =
   case mfp of
     Just fp -> loadSolutionPath fp
     Nothing -> do
-      msd <- loadSolution pid
+      msd <- loadSolution False pid
       case msd of
         Just sd -> return sd
         Nothing -> error $ show pid ++ "-solution.json missing"
@@ -78,11 +78,12 @@ getSolutionDesc pid mfp =
 loadProblem :: ProblemID -> IO ProblemDescription
 loadProblem pid = loadProblemPath pid (problemPath pid)
 
-loadSolution :: ProblemID -> IO (Maybe SolutionDescription)
-loadSolution pid = doesFileExist solutionFP >>= \case
+loadSolution :: Bool -> ProblemID -> IO (Maybe SolutionDescription)
+loadSolution quiet pid = doesFileExist solutionFP >>= \case
   True -> do
     solutionDesc <- loadSolutionPath solutionFP
-    sayString $ show pid <> ": loading " <> solutionFP <> " (score: " <> show solutionDesc.score <> ")"
+    unless quiet $
+      sayString $ show pid <> ": loading " <> solutionFP <> " (score: " <> show solutionDesc.score <> ")"
     pure (Just solutionDesc)
   False -> pure Nothing
   where
@@ -90,7 +91,7 @@ loadSolution pid = doesFileExist solutionFP >>= \case
 
 mainSolve :: Bool -> Maybe ProblemRenderer -> ProblemID -> IO ()
 mainSolve autoSubmit renderer pid = do
-    mPrevSolution <- loadSolution pid
+    mPrevSolution <- loadSolution False pid
     problemDesc <- loadProblem pid
     let debug msg = sayString $ show problemDesc.name <> ": " <> msg
 
