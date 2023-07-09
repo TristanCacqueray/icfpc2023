@@ -65,6 +65,7 @@ main =
       Params
         <$> optionalWith auto 's' "seed" "SEED" "seed count" 10
         <*> optionalWith auto 'b' "breed" "BREED" "breed count" 10
+        <*> optionalWith auto 'v' "volume" "VOLUME" "volume mutation count" 10
 
 mainCheck :: ProblemID -> Maybe FilePath -> IO ()
 mainCheck pid msolutionFP =

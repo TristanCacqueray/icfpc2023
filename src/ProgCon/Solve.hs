@@ -201,7 +201,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
         doMutateVolume :: MV.IOVector Float -> RandGen ()
         doMutateVolume iov = do
             -- mutate a couple of volumes
-            replicateM_ 2 do
+            replicateM_ params.volumeCount do
                 musician <- getRandomR (0, musicianCount - 1)
                 volume <- getRandomR (0, 10)
                 MV.write iov musician volume
