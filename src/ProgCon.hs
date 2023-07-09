@@ -1,6 +1,7 @@
 module ProgCon (main) where
 
 import RIO
+import Data.List.Extra (groupSortOn)
 import Data.Vector.Unboxed qualified as UV
 import Say
 import SimpleCmdArgs
@@ -184,11 +185,17 @@ listProblems msolved pids =
       when dispProb $ do
         problemDesc <- loadProblem pid
         let problem = problemDesc.problem
+            musicians = problem.problemMusicians
         putStrLn $
           unwords ['#' : show pid
-                  ,"musicians:" <> show (UV.length problem.problemMusicians)
-                  ,"pillars:" <> show (length problem.problemPillars)
                   ,"audience:" <> show (length problem.problemAttendees)
+                  ,"pillars:" <> show (length problem.problemPillars)
+                  ,"musicians:" <> show (UV.length musicians)
+                  ,"instruments:" <>
+                   let instrmts = (map length . groupSortOn id . UV.toList) musicians
+                   in if all (==1) instrmts
+                   then "unique" -- was "solos"
+                   else show instrmts
                   ]
 
     -- FIXME read from problems/
