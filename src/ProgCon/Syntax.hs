@@ -27,6 +27,7 @@ data Params = Params
     { seedCount :: Int
     , breedCount :: Int
     }
+    deriving (Show)
 
 data ProblemDescription = ProblemDescription
     { name :: ProblemID
