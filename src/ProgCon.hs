@@ -24,6 +24,10 @@ import Data.Time.Clock (getCurrentTime, diffUTCTime)
 
 import Control.Scheduler (Comp(Par), withScheduler_, scheduleWork_)
 
+-- | Change the set of problem globally by tweaking 'allProblems'
+allProblems :: [ProblemID]
+allProblems = filter (/= 38) [1..90]
+
 main :: IO ()
 main =
   simpleCmdArgs Nothing "progcon" "musical concert" $
@@ -200,10 +204,23 @@ mainPlacements pid = withRenderer \renderer -> do
 
 mainDriver :: Int -> IO ()
 mainDriver maxTime = withScheduler_ Par \scheduler -> do
+  let dryRun = False
   putStrLn $ printf "Starting driver with max %d seconds"  maxTime
-  solutions <- sortProblemByScore
+
+  -- start from the smallest score
+  solutions <- _sortProblemByScore
+
+  -- start from the oldest solution
+  -- solutions <- _sortProblemByDate
+
   now <- getCurrentTime
-  forM_ solutions \(pid, time, solution) -> scheduleWork_ scheduler do
+  let solutionsOrdered =
+        -- Start from the biggest/recent one
+        reverse solutions
+        -- Start from the smallest/oldest
+        -- solution
+
+  forM_ solutionsOrdered \(pid, time, solution) -> scheduleWork_ scheduler do
     let
       ageSec :: Integer
       ageSec = truncate (nominalDiffTimeToSeconds $ diffUTCTime now time) `div` 60
@@ -213,9 +230,10 @@ mainDriver maxTime = withScheduler_ Par \scheduler -> do
       (showScore solution.score)
     problem <- loadProblem pid
     start_time <- getCurrentTime
-    improved <- runRandGen $ mainImprove maxTime problem start_time start_time solution 0
-    when improved do
-      void $ forkIO $ submitOne False True pid
+    unless dryRun do
+      improved <- runRandGen $ mainImprove maxTime problem start_time start_time solution 0
+      when improved do
+        void $ forkIO $ submitOne False True pid
 
 mainImprove :: Int -> ProblemDescription -> UTCTime -> UTCTime -> SolutionDescription -> Int -> RandGen Bool
 mainImprove maxTime problemDesc initial_time start_time solutionDesc idx = do
@@ -238,14 +256,17 @@ mainImprove maxTime problemDesc initial_time start_time solutionDesc idx = do
     then mainImprove maxTime problemDesc initial_time newTime newSolution (idx + 1)
     else pure $ initial_time /= start_time
 
-sortProblemByScore :: IO [(ProblemID, UTCTime, SolutionDescription)]
-sortProblemByScore = do
+sortProblem :: _ -> IO [(ProblemID, UTCTime, SolutionDescription)]
+sortProblem doSort = do
   allSolutions <- traverse (loadSolutionPath . solutionPath) allProblems
   allTimes <- traverse (getModificationTime . solutionPath) allProblems
-  pure $ sortOn (\(_pid, _time, s) -> s.score) (zip3 allProblems allTimes allSolutions)
+  pure $ doSort (zip3 allProblems allTimes allSolutions)
 
-allProblems :: [ProblemID]
-allProblems = filter (/= 38) [1..90]
+_sortProblemByScore :: IO [(ProblemID, UTCTime, SolutionDescription)]
+_sortProblemByScore = sortProblem $ sortOn (\(_pid, _time, s) -> s.score)
+
+_sortProblemByDate :: IO [(ProblemID, UTCTime, SolutionDescription)]
+_sortProblemByDate = sortProblem $ sortOn (\(_pid, time, _s) -> time)
 
 -- FIXME more filtering
 listProblems :: Bool -> [ProblemID] -> IO ()

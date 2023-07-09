@@ -24,7 +24,7 @@ source-repository head
 
 common common
   default-language:    GHC2021
-  ghc-options:         -Wall
+  ghc-options:         -Wall -Wno-partial-type-signatures
   if impl(ghc >= 8.0)
     ghc-options:       -Wcompat
                        -Widentities
