@@ -39,7 +39,8 @@ submit pid solution = do
                     , ("Authorization", "Bearer " <> encodeUtf8 (pack token))
                     ]
                 }
-    response <- retryNetwork $ httpLbs request manager
+    -- was: retryNetwork
+    response <- httpLbs request manager
     if statusCode (responseStatus response) == 201
         then pure $ decode (responseBody response)
         else do
