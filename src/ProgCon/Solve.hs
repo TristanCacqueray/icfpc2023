@@ -192,8 +192,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
         makeNewSeed :: SolutionDescription -> RandGen SolutionDescription
         makeNewSeed sd = do
             genPlacements <- GenPlacements <$> MV.clone sd.genPlacements.iov
-            unless (params.onlyVolume) do
-               doMutate genPlacements
+            doMutate genPlacements
             genVolumes <- MV.clone sd.genVolumes
             doMutateVolume genVolumes
             score <- scoreSolution problemDesc genPlacements genVolumes
