@@ -167,9 +167,7 @@ geneticSolve mRenderer mPrevSolution problemDesc
             sd : _ -> do
                 when (sd.score > prevScore) do
                     sayString $ show problemDesc.name <> ": new highscore: " <> show sd.score <> ", saving..."
-                    -- enable when scoring works properly!
-                    when False do
-                        liftIO $ saveSolutionPath sd (solutionPath problemDesc.name)
+                    liftIO $ saveSolutionPath sd (solutionPath problemDesc.name)
                     forM_ mRenderer \renderer -> liftIO do
                         solution <- toSolution musicianCount sd.genPlacements sd.genVolumes
                         renderProblem problem solution renderer
