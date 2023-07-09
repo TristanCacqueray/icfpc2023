@@ -1,5 +1,6 @@
 module ProgCon.GUI where
 
+import Data.Vector qualified as V
 import Data.Vector.Unboxed qualified as UV
 import GHC.Float (int2Float)
 import Graphics.Gloss hiding (scale)
@@ -66,8 +67,12 @@ drawProblem problem solution = Pictures (room : stage : (pillars <> musicians <>
     pillars = map drawPillar problem.problemPillars
     drawPillar (Pillar (px, py) radius) = Translate (topX + fromIntegral px) (topY - fromIntegral py) $ Color chartreuse $ Circle (fromIntegral radius)
 
-    musicians = map drawMusician (UV.toList solution.solutionPlacements)
-    drawMusician (x, y) = Translate (topX + fromIntegral x) (topY - fromIntegral y) $ Circle 10
+    musicians = V.toList $ V.imap drawMusician $ V.convert $ solution.solutionPlacements
+    drawMusician musician (x, y) =
+        let instrument = problem.problemMusicians UV.! (musician `mod` UV.length problem.problemMusicians)
+            allColor = [greyN 0.7, black, red, green, blue, yellow, cyan, magenta, rose, violet, azure, aquamarine, chartreuse, orange]
+            c = allColor !! (instrument `mod` length allColor)
+         in Translate (topX + fromIntegral x) (topY - fromIntegral y) $ Color c $ Circle 10
 
     attendees = map drawAttendee problem.problemAttendees
     drawAttendee attendee = Translate (topX + fromIntegral attendee.attendeeX) (topY - fromIntegral attendee.attendeeY) $ Circle attendeeSize
