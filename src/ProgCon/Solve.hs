@@ -24,6 +24,7 @@ import ProgCon.Parser (saveSolutionPath)
 import ProgCon.Syntax
 import Say
 import Text.Printf (printf)
+import RIO (replicateConcurrently)
 
 solve :: Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
 solve = geneticSolve
@@ -137,9 +138,9 @@ geneticSolve mRenderer mPrevSolution problemDesc
     | otherwise = runRandGen do
         initialSeeds <- case mPrevSolution of
             Just solution -> do
-                newSeeds <- replicateM (seedCount - 1) (randomSolution problemDesc placements)
+                newSeeds <- parReplicateM (seedCount - 1) (randomSolution problemDesc placements)
                 pure $ solution : newSeeds
-            Nothing -> replicateM seedCount (randomSolution problemDesc placements)
+            Nothing -> parReplicateM seedCount (randomSolution problemDesc placements)
         (newSolution : _) <- go genCount initialSeeds
         pure (Just newSolution)
   where
@@ -185,7 +186,7 @@ geneticSolve mRenderer mPrevSolution problemDesc
       where
         breedNewSolutions :: SolutionDescription -> RandGen [SolutionDescription]
         breedNewSolutions sd = do
-            newSolutions <- replicateM breedCount (makeNewSeed sd)
+            newSolutions <- parReplicateM breedCount (makeNewSeed sd)
             -- Keep the original seed
             pure (sd : newSolutions)
 
@@ -255,3 +256,7 @@ runRandGen :: RandGen a -> IO a
 runRandGen action = do
     stdg <- initStdGen
     evalRandT action stdg
+
+parReplicateM :: Int -> RandGen a -> RandGen [a]
+parReplicateM count action = do
+  liftIO $ replicateConcurrently count (runRandGen action)
