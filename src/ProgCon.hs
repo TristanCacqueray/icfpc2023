@@ -95,10 +95,9 @@ mainPlacements :: ProblemID -> IO ()
 mainPlacements pid = withRenderer \renderer -> do
     problemDesc <- loadProblem pid
     let problem = problemDesc.problem
-        dim = (problem.problemStageWidth, problem.problemStageHeight)
-        placements = toAbsPlacement problem <$> maximumPlacements dim
-        setMaxMusician pd = pd{problem=pd.problem{problemMusicians = UV.replicate (length placements) 0}}
-    putStrLn $ "total placements: " <> show (length placements)
+        placements = maximumPlacements problem
+        setMaxMusician pd = pd{problem=pd.problem{problemMusicians = UV.generate (UV.length placements) (\pos -> pos `mod` 3)}}
+    putStrLn $ "total placements: " <> show (UV.length placements)
     solutionDesc <- runRandGen $ randomSolution (setMaxMusician problemDesc) placements
     solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
     renderProblem problemDesc.problem solution renderer
