@@ -188,7 +188,7 @@ mainDriver :: IO ()
 mainDriver = do
   solutions <- sortProblemByScore
   forM_ solutions \(pid, solution) -> do
-    putStrLn (printf "%d - problem %s" (solution.score) (show pid))
+    putStrLn (printf "%s - problem %s" (showScore solution.score) (show pid))
 
 sortProblemByScore :: IO [(ProblemID, SolutionDescription)]
 sortProblemByScore = do
