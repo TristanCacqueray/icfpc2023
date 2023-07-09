@@ -26,8 +26,8 @@ type RandGen a = RandT StdGen IO a
 type Grid = Int
 
 -- | Arranging the musicians in a grid, this function returns all the available placements.
-allGridPlacement :: (Grid, Grid) -> [(Grid, Grid)]
-allGridPlacement (width, height) = go radius radius []
+allGridPlacement :: (Grid, Grid) -> UV.Vector (Grid, Grid)
+allGridPlacement (width, height) = UV.fromList $ go radius radius []
   where
     -- go takes the current (x, y) position, and the list of accumulated position
     go :: Grid -> Grid -> [(Grid, Grid)] -> [(Grid, Grid)]
@@ -35,25 +35,30 @@ allGridPlacement (width, height) = go radius radius []
         let -- store the current pos in the accumulator
             newAcc = (x, y) : acc
          in if
-                    | -- there is room to fit another musician on this line
-                      x + r3 < width ->
-                        go (x + r2) y newAcc
-                    | -- there is room to fit another line
-                      y + r3 < height ->
-                        go radius (y + r2) newAcc
+                    | -- there is room to fit another musician on this line, keep the y pos
+                      x + nextMusician < width ->
+                        go (x + diameter) y newAcc
+                    | -- there is room to start another line, reset the x pos
+                      y + nextMusician < height ->
+                        go radius (y + diameter) newAcc
                     | -- this is the end
                       otherwise ->
                         newAcc
-    radius = 10
-    -- the diamater:   ( -r- o -r- )
-    r2 = radius * 2
-    -- r3 is the distance from the current position + a whole new musician
-    -- e.g:     o -r- )( -r- o -r-)|
-    r3 = r2 + radius
+
+-- | Placement dimension: ( -r- o -r- )
+radius, diameter :: Int
+radius = 10
+diameter = radius * 2
+
+{- | nextMusician is the distance from the current position + a whole new musician
+ e.g:     o -r- )( -r- o -r-)|
+-}
+nextMusician :: Int
+nextMusician = radius + diameter
 
 -- | Arranging the musicians in a grid, this function returns all the available placements.
-allPackedPlacement :: (Grid, Grid) -> [(Grid, Grid)]
-allPackedPlacement (width, height) = go 0 radius radius []
+allPackedPlacement :: (Grid, Grid) -> UV.Vector (Grid, Grid)
+allPackedPlacement (width, height) = UV.fromList $ go 0 radius radius []
   where
     go
         | -- do the offset per line
@@ -68,14 +73,14 @@ allPackedPlacement (width, height) = go 0 radius radius []
         let newAcc = (x, y) : acc
             -- we alternate the start position every two lines
             newX
-                | even line = r2
+                | even line = diameter
                 | otherwise = radius
          in if
                     | -- there is room to fit another musician on this line
-                      x + r3 < width ->
-                        goLine line (x + r2) y newAcc
-                    | -- there is room to fit another line
-                      y + r3 < height ->
+                      x + nextMusician < width ->
+                        goLine line (x + diameter) y newAcc
+                    | -- there is room to start another line
+                      y + nextMusician < height ->
                         goLine (line + 1) newX (y + newOffset) newAcc
                     | -- this is the end
                       otherwise ->
@@ -86,29 +91,34 @@ allPackedPlacement (width, height) = go 0 radius radius []
         let newAcc = (x, y) : acc
             -- we alternate the start position every two columns
             newY
-                | even col = r2
+                | even col = diameter
                 | otherwise = radius
          in if
-                    | y + r3 < height -> goCol col x (y + r2) newAcc
-                    | x + r3 < width -> goCol (col + 1) (x + newOffset) newY newAcc
-                    | otherwise -> newAcc
+                    | -- there is room to fit another musician on this column
+                      y + nextMusician < height ->
+                        goCol col x (y + diameter) newAcc
+                    | -- there is room to start another column
+                      x + nextMusician < width ->
+                        goCol (col + 1) (x + newOffset) newY newAcc
+                    | -- this is the end
+                      otherwise ->
+                        newAcc
 
     newOffset = 19
-    r3 = r2 + radius
-    r2 = radius * 2
-    radius = 10
 
-maximumPlacements :: (Grid, Grid) -> [(Grid, Grid)]
-maximumPlacements dim
-    | length packed > length grid = packed
-    | otherwise = grid
+maximumPlacements :: Problem -> UV.Vector (Grid, Grid)
+maximumPlacements problem =
+    let best
+            | UV.length packed > UV.length grid = packed
+            | otherwise = grid
+     in UV.map toAbsPlacement best
   where
+    dim = (problem.problemStageWidth, problem.problemStageHeight)
     packed = allPackedPlacement dim
     grid = allGridPlacement dim
 
-toAbsPlacement :: Problem -> (Grid, Grid) -> (Grid, Grid)
-toAbsPlacement problem (x, y) = (sx + x, sy + y)
-  where
+    toAbsPlacement :: (Grid, Grid) -> (Grid, Grid)
+    toAbsPlacement (x, y) = (sx + x, sy + y)
     (sx, sy) = problem.problemStageBottomLeft
 
 geneticSolve :: Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
@@ -130,8 +140,8 @@ geneticSolve mRenderer mPrevSolution problemDesc
     seedCount = 10
     breedCount = 10
     dim = (problem.problemStageWidth, problem.problemStageHeight)
-    placements = toAbsPlacement problem <$> maximumPlacements dim
-    total = length placements
+    placements = maximumPlacements problem
+    total = UV.length placements
     musicianCount = UV.length problem.problemMusicians
     problem = problemDesc.problem
 
@@ -196,9 +206,9 @@ geneticSolve mRenderer mPrevSolution problemDesc
                 MV.swap iov musician swapPos
 
 -- | Create a random solution.
-randomSolution :: ProblemDescription -> [(Grid, Grid)] -> RandGen SolutionDescription
-randomSolution problemDesc xs = do
-    iov <- V.thaw (V.fromList xs)
+randomSolution :: ProblemDescription -> UV.Vector (Grid, Grid) -> RandGen SolutionDescription
+randomSolution problemDesc placements = do
+    iov <- V.thaw (V.convert placements)
     liftRandT \stdg -> do
         newstdg <- stToIO $ shuffle iov stdg
         pure ((), newstdg)
