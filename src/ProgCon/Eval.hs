@@ -86,9 +86,12 @@ scoreHappiness problemDesc solution = sum allHappiness
         | problemDesc.name > 0 && problemDesc.name < 56 = 1 -- extension is disabled for the first problems
         | otherwise = 1 + UV.sum (UV.generate musicianCount calcMusicianDistance)
       where
+        instrument = problemDesc.problem.problemMusicians UV.! musician
         musicianPos = solution.solutionPlacements UV.! musician
         calcMusicianDistance otherMusician
-            | otherMusician == musician = 0
+            | otherMusician == musician || instrument /= otherInstrument = 0
             | otherwise =
                 let d = calcDistanceMusician musicianPos (solution.solutionPlacements UV.! otherMusician)
                  in 1 / d
+          where
+            otherInstrument = problemDesc.problem.problemMusicians UV.! otherMusician
