@@ -99,7 +99,7 @@ mainSolve ignoreSoln autoSubmit renderer pid = do
     problemDesc <- loadProblem pid
     let debug msg = sayString $ show problemDesc.name <> ": " <> msg
 
-    debug $ "starting... (" <> show (UV.length problemDesc.problem.problemMusicians) <> "musicians)"
+    debug $ "starting... (" <> show (UV.length problemDesc.problem.problemMusicians) <> " musicians)"
 
     let prevScore = case mPrevSolution of
           Nothing -> minBound
