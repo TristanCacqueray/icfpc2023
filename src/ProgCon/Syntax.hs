@@ -14,8 +14,8 @@ pattern SpecProblem :: ProblemID
 pattern SpecProblem = ProblemID 0
 
 problemBase :: ProblemID -> FilePath
-problemBase SpecProblem = "./problems/spec"
-problemBase (ProblemID pid) = "./problems/" <> printf "%02d" pid
+problemBase SpecProblem = "problems/spec"
+problemBase (ProblemID pid) = "problems/" <> printf "%02d" pid
 
 problemPath :: ProblemID -> FilePath
 problemPath pid = problemBase pid <> "-problem.json"

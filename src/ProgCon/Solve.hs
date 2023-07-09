@@ -16,8 +16,8 @@ import VectorShuffling.Mutable (shuffle)
 import Control.Concurrent
 import Control.Monad.ST (stToIO)
 import Data.List (sortOn)
-import Data.Time (getCurrentTime)
-import Data.Time.Format.ISO8601 (iso8601Show)
+import Data.Time.Format
+import Data.Time.LocalTime
 import ProgCon.Eval
 import ProgCon.GUI
 import ProgCon.Parser (saveSolutionPath)
@@ -179,8 +179,8 @@ geneticSolve mRenderer mPrevSolution problemDesc
                 pure sd.score
             _ -> pure minBound
         liftIO do
-            now <- getCurrentTime
-            sayString $ printf "%s %s: gen %2d - %10d" (take 25 $ iso8601Show now) (show problemDesc.name) (genCount - count + 1) best
+            now <- getZonedTime
+            sayString $ printf "%s %s: gen %2d - %10d" (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now) ('#' : show problemDesc.name) (genCount - count + 1) best
 
         -- Repeat the process, keeping only the best seed.
         go (count - 1) (take seedCount populationOrdered)
