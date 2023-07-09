@@ -70,13 +70,15 @@ waitFor sid = do
     resp <- getInfo sid
     if
             | "Processing" `BS.isInfixOf` resp -> do
-                putStrLn "Processing..."
+                putChar '.'
                 threadDelay 5_000_000
                 waitFor sid
             | "Success" `BS.isInfixOf` resp -> do
+                BS.putStr "\n"
                 BS.putStr $ BS.take 141 resp
                 BS.putStr "\n"
             | otherwise -> do
+                BS.putStr "\n"
                 BS.putStr "!! FAILURE: "
                 BS.putStr $ BS.take 207 resp
                 BS.putStr "\n"
@@ -91,7 +93,7 @@ submitOne lenient pid = do
             solutionDesc <- loadSolutionPath solutionFP
             solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
             submit pid solution >>= \case
-                Just sid -> print sid >> waitFor sid
+                Just sid -> print sid >> putStr "Processing" >> waitFor sid
                 Nothing -> pure ()
   where
     solutionFP :: FilePath
