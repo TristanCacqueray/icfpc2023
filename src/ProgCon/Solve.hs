@@ -26,7 +26,7 @@ import Say
 import Text.Printf (printf)
 import RIO (replicateConcurrently)
 
-solve :: Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
+solve :: Params -> Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
 solve = geneticSolve
 
 type RandGen a = RandT StdGen IO a
@@ -129,8 +129,8 @@ maximumPlacements problem =
     toAbsPlacement (x, y) = (sx + x, sy + y)
     (sx, sy) = problem.problemStageBottomLeft
 
-geneticSolve :: Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
-geneticSolve mRenderer mPrevSolution problemDesc
+geneticSolve :: Params -> Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
+geneticSolve params mRenderer mPrevSolution problemDesc
     | total < musicianCount = do
         -- mapM_ print (allSquarePlacement padding dim)
         sayString $ "Impossible square placement: " <> show dim <> ", for " <> show musicianCount <> " total: " <> show total
@@ -138,15 +138,13 @@ geneticSolve mRenderer mPrevSolution problemDesc
     | otherwise = runRandGen do
         initialSeeds <- case mPrevSolution of
             Just solution -> do
-                newSeeds <- parReplicateM (seedCount - 1) (randomSolution problemDesc placements)
+                newSeeds <- parReplicateM (params.seedCount - 1) (randomSolution problemDesc placements)
                 pure $ solution : newSeeds
-            Nothing -> parReplicateM seedCount (randomSolution problemDesc placements)
+            Nothing -> parReplicateM params.seedCount (randomSolution problemDesc placements)
         (newSolution : _) <- go genCount initialSeeds
         pure (Just newSolution)
   where
     genCount = 20
-    seedCount = 10
-    breedCount = 10
     dim = (problem.problemStageWidth, problem.problemStageHeight)
     placements = maximumPlacements problem
     total = UV.length placements
@@ -182,11 +180,11 @@ geneticSolve mRenderer mPrevSolution problemDesc
             sayString $ printf "%s %s: gen%2d score %d" (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now) ('#' : show problemDesc.name) (genCount - count + 1) best
 
         -- Repeat the process, keeping only the best seed.
-        go (count - 1) (take seedCount populationOrdered)
+        go (count - 1) (take params.seedCount populationOrdered)
       where
         breedNewSolutions :: SolutionDescription -> RandGen [SolutionDescription]
         breedNewSolutions sd = do
-            newSolutions <- parReplicateM breedCount (makeNewSeed sd)
+            newSolutions <- parReplicateM params.breedCount (makeNewSeed sd)
             -- Keep the original seed
             pure (sd : newSolutions)
 
@@ -259,4 +257,6 @@ runRandGen action = do
 
 parReplicateM :: Int -> RandGen a -> RandGen [a]
 parReplicateM count action = do
-  liftIO $ replicateConcurrently count (runRandGen action)
+  -- that doesn't seem to work
+  -- liftIO $ replicateConcurrently count (runRandGen action)
+  replicateM count action

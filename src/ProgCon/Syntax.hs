@@ -23,6 +23,11 @@ problemPath pid = problemBase pid <> "-problem.json"
 solutionPath :: ProblemID -> FilePath
 solutionPath pid = problemBase pid <> "-solution.json"
 
+data Params = Params
+    { seedCount :: Int
+    , breedCount :: Int
+    }
+
 data ProblemDescription = ProblemDescription
     { name :: ProblemID
     , problem :: Problem
