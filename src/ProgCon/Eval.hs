@@ -56,9 +56,11 @@ lineCrossCircle attendee (mx, my) distance radius (px, py) = discriment > 0
               d = x1 * y2 - x2 * y1
               discriment = radius * radius * distance - d * d
 
+-- | This return the distance squared
 calcDistance :: Attendee -> (Int, Int) -> Int
 calcDistance attendee (px, py) = (attendee.attendeeX - px) ^ (2 :: Int) + (attendee.attendeeY - py) ^ (2 :: Int)
 
+-- | This return the regular distance
 calcDistanceMusician :: (Int, Int) -> (Int, Int) -> Float
 calcDistanceMusician (x, y) (px, py) =
   let dx = fromIntegral (x - px)
