@@ -47,7 +47,7 @@ saveSolutionPath solutionDesc fp = do
     -- NOTE: Keep this tuple in sync with the 'loadSolutionPath'
     let tup = (solutionDesc.score, solutionDesc.musicianCount, arr)
     Aeson.encodeFile fp tup
-    sayString $ fp <> ": saved"
+    sayString $ "saved " <> fp
 
 instance ToJSON Solution where
     toJSON Solution{..} =

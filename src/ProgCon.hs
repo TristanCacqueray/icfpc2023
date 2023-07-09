@@ -108,9 +108,9 @@ mainSolve ignoreSoln autoSubmit renderer pid = do
     mPrevSolution <-
       if ignoreSoln then return Nothing else loadSolution False pid
     problemDesc <- loadProblem pid
-    let debug msg = sayString $ show problemDesc.name <> ": " <> msg
+    let debug msg = sayString $ "#" <> show problemDesc.name <> ": " <> msg
 
-    debug $ "starting... (" <> show (UV.length problemDesc.problem.problemMusicians) <> " musicians)"
+    debug $ "START (" <> show (UV.length problemDesc.problem.problemMusicians) <> " musicians)"
 
     let prevScore = case mPrevSolution of
           Nothing -> minBound
@@ -149,7 +149,7 @@ mainRender pid msolutionFP = withRenderer \renderer -> do
 -- FIXME merge into check
 mainTest :: IO ()
 mainTest = do
-    res <- checkScore SpecProblem $ Just "./problems/spec-solution.json"
+    res <- checkScore SpecProblem $ Just "problems/spec-solution.json"
     unless (res == 5343) do
         error $ "Invalid spec score, expected 5343, got: " <> show res
 

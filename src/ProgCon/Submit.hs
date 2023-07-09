@@ -86,7 +86,7 @@ submitOne lenient pid = do
     if not hasSolution
         then unless lenient $ error $ "solution file not found: " ++ solutionFP
         else do
-            putStrLn $ "Go " <> solutionFP
+            putStrLn $ "Submitting #" <> show pid
             solutionDesc <- loadSolutionPath solutionFP
             solution <- toSolution solutionDesc.musicianCount solutionDesc.genPlacements
             submit pid solution >>= \case
