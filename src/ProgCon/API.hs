@@ -1,5 +1,6 @@
 module ProgCon.API where
 
+import RIO (when)
 import Control.Retry
 import Data.Aeson (FromJSON, Object)
 import Data.ByteString.Char8 qualified as B8
@@ -29,7 +30,8 @@ accessAPI method params settings expected = do
 
 retryNetwork :: IO (Response a) -> IO (Response a)
 retryNetwork act =
-  recoverAll retrypolicy $ const act
+  recoverAll retrypolicy $ \rs ->
+  when (rsIterNumber rs > 0) (putChar '.') >> act
  where
     retrypolicy = exponentialBackoff 750_000 <> limitRetries 10
 
