@@ -16,6 +16,9 @@ import ProgCon.Syntax
 import ProgCon.Submit
 import Data.List (sortOn)
 import Text.Printf (printf)
+import Data.Time (UTCTime, nominalDiffTimeToSeconds)
+import RIO.Directory (getModificationTime)
+import Data.Time.Clock (getCurrentTime, diffUTCTime)
 
 main :: IO ()
 main =
@@ -187,13 +190,18 @@ mainPlacements pid = withRenderer \renderer -> do
 mainDriver :: IO ()
 mainDriver = do
   solutions <- sortProblemByScore
-  forM_ solutions \(pid, solution) -> do
-    putStrLn (printf "%s - problem %s" (showScore solution.score) (show pid))
+  now <- getCurrentTime
+  forM_ solutions \(pid, time, solution) -> do
+    let
+      ageSec :: Integer
+      ageSec = truncate (nominalDiffTimeToSeconds $ diffUTCTime now time) `div` 60
+    putStrLn (printf "%13s - %3s minutes old - problem %02s" (showScore solution.score) (show ageSec) (show pid))
 
-sortProblemByScore :: IO [(ProblemID, SolutionDescription)]
+sortProblemByScore :: IO [(ProblemID, UTCTime, SolutionDescription)]
 sortProblemByScore = do
   allSolutions <- traverse (loadSolutionPath . solutionPath) allProblems
-  pure $ sortOn (\(_pid, s) -> s.score) (zip allProblems allSolutions)
+  allTimes <- traverse (getModificationTime . solutionPath) allProblems
+  pure $ sortOn (\(_pid, _time, s) -> s.score) (zip3 allProblems allTimes allSolutions)
 
 allProblems :: [ProblemID]
 allProblems = filter (/= 38) [1..90]
