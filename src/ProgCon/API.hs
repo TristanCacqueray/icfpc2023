@@ -40,7 +40,7 @@ retryPOST act =
   recoverAll retrypolicy $ \rs ->
   when (rsIterNumber rs > 0) (putChar '.') >> act
  where
-    retrypolicy = exponentialBackoff 3_000_000 <> limitRetries 5
+    retrypolicy = exponentialBackoff 5_000_000 <> limitRetries 3
 
 userBoard:: IO ()
 userBoard = do

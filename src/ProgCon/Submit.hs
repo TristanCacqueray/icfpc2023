@@ -13,9 +13,9 @@ import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types.Status (statusCode)
 import System.Directory (doesFileExist)
 import System.Environment
-import System.Time.Extra (sleep)
+--import System.Time.Extra (sleep)
 
-import ProgCon.API (retryGET, retryPOST)
+import ProgCon.API (retryGET, {-retryPOST-})
 import ProgCon.Parser (loadSolutionPath)
 import ProgCon.Solve (fromSolutionDesc)
 import ProgCon.Syntax
@@ -39,15 +39,14 @@ submit pid solution = do
                     , ("Authorization", "Bearer " <> encodeUtf8 (pack token))
                     ]
                 }
-    -- was: retryNetwork
-    response <- retryPOST $ httpLbs request manager
+    -- was: retryPOST
+    response <- httpLbs request manager
     if statusCode (responseStatus response) == 201
         then pure $ decode (responseBody response)
         else do
             putStrLn $ "The status code was: " ++ show (statusCode $ responseStatus response)
             print $ responseBody response
-            sleep 1 -- server often fails
-            submit pid solution
+            return Nothing
 
 getInfo :: SubmitID -> IO BS.ByteString
 getInfo (SubmitID sid) = do
