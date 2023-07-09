@@ -24,7 +24,7 @@ import ProgCon.Parser (saveSolutionPath)
 import ProgCon.Syntax
 import Say
 import Text.Printf (printf)
-import RIO (replicateConcurrently)
+-- import RIO (replicateConcurrently)
 
 solve :: Params -> Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
 solve = geneticSolve
