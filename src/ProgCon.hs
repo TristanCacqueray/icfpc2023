@@ -6,7 +6,7 @@ import Say
 import SimpleCmdArgs
 import System.Directory (doesFileExist)
 
-import ProgCon.API
+import ProgCon.API (scoreBoard, userBoard)
 import ProgCon.Eval
 import ProgCon.GUI
 import ProgCon.Parser
