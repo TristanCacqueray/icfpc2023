@@ -142,7 +142,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
                 newSeeds <- parReplicateM (params.seedCount - 1) (randomSolution problemDesc placements)
                 pure $ solution : newSeeds
             Nothing -> parReplicateM params.seedCount (randomSolution problemDesc placements)
-        (newSolution : _) <- go params.genCount initialSeeds
+        (newSolution : _) <- go 0 params.genCount initialSeeds
         pure (Just newSolution)
   where
     dim = (problem.problemStageWidth, problem.problemStageHeight)
@@ -151,9 +151,10 @@ geneticSolve params mRenderer mPrevSolution problemDesc
     musicianCount = UV.length problem.problemMusicians
     problem = problemDesc.problem
 
-    go :: Int -> [SolutionDescription] -> RandGen [SolutionDescription]
-    go 0 !seeds = pure seeds
-    go count !seeds = do
+    go :: Int -> Int -> [SolutionDescription] -> RandGen [SolutionDescription]
+    go lastHighscoreAge count !seeds
+      | lastHighscoreAge > min params.genCount 20 && count <= 0 = pure seeds
+      | otherwise = do
         -- Generate a new population
         population <- concat <$> traverse breedNewSolutions seeds
 
@@ -162,7 +163,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
         let prevScore = case seeds of
                 sd : _ -> sd.score
                 _ -> minBound
-        best <- case populationOrdered of
+        (newHighScore, best) <- case populationOrdered of
             sd : _ -> do
                 when (sd.score > prevScore) do
                     sayString $ show problemDesc.name <> ": new highscore: " <> showScore sd.score <> ", saving..."
@@ -173,14 +174,19 @@ geneticSolve params mRenderer mPrevSolution problemDesc
                         -- FIX: without this delay, the gloss ui is not refreshing :/
                         liftIO $ threadDelay 1_000_000
 
-                pure sd.score
-            _ -> pure minBound
+                pure (sd.score > prevScore, sd.score)
+            _ -> pure (False, minBound)
+
+        let newLastHighscore
+              | newHighScore = 0
+              | otherwise = lastHighscoreAge + 1
+
         liftIO do
             now <- getZonedTime
-            sayString $ printf "%s %s: gen%2d score %s" (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now) ('#' : show problemDesc.name) (params.genCount - count + 1) (showScore best)
+            sayString $ printf "%s %s: gen %4d / %d score %s (since %d)" (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now) ('#' : show problemDesc.name) (params.genCount - count + 1) params.genCount (showScore best) newLastHighscore
 
         -- Repeat the process, keeping only the best seed.
-        go (count - 1) (take params.seedCount populationOrdered)
+        go newLastHighscore (count - 1) (take params.seedCount populationOrdered)
       where
         breedNewSolutions :: SolutionDescription -> RandGen [SolutionDescription]
         breedNewSolutions sd = do
