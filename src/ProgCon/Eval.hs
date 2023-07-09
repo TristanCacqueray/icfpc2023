@@ -16,9 +16,13 @@ attendeeHappiness problemDesc solution musicianClosenessFactor attendee = UV.sum
     musicianImpact !musician placement
       | isBlocked = 0
       | otherwise =
-        let baseImpact = fromIntegral (1_000_000 * taste) / fromIntegral distance
-            closenessFactor = musicianClosenessFactor ! musician
-        in ceiling $ closenessFactor * baseImpact
+        let
+          baseI :: Float
+          baseI = fromIntegral (1_000_000 * taste) / fromIntegral distance
+          baseImpact :: Int -- round up
+          baseImpact = ceiling baseI
+          closenessFactor = musicianClosenessFactor ! musician
+        in ceiling $ closenessFactor * fromIntegral baseImpact
      where
        -- the musician's instrument
        instrument = problemDesc.problem.problemMusicians ! musician
