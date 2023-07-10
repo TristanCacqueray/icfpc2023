@@ -77,6 +77,8 @@ waitFor pid sid = do
                 BS.putStr $ BS.take 141 resp
                 BS.putStr "\n"
                 putStrLn =<< SimpleCmd.Git.git "add" [solutionPath pid]
+                putStrLn =<< SimpleCmd.Git.git "commit" ["-m", "New solution for " <> show pid]
+                putStrLn =<< SimpleCmd.Git.git "push" ["origin", "HEAD:tristan-driver"]
             | otherwise -> do
                 BS.putStr "\n"
                 BS.putStr "!! FAILURE: "
