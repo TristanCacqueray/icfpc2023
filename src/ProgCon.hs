@@ -29,7 +29,12 @@ allProblems :: [ProblemID]
 allProblems = filter (/= 38) [1..90]
 
 main :: IO ()
-main =
+main = do
+  hSetBuffering stdout NoBuffering
+  mainMain
+
+mainMain :: IO ()
+mainMain =
   simpleCmdArgs Nothing "progcon" "musical concert" $
   subcommands
   [ Subcommand "solve" "solve problem and --submit if new highscore" $
