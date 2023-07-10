@@ -254,8 +254,8 @@ mainImprove maxTime problemDesc initial_time start_time solutionDesc idx = do
     Just sd -> liftIO do
       saveSolutionPath sd (solutionPath problemDesc.name)
       now <- getCurrentTime
-      sayString $ printf "%s problem-%02s: new highscore! %15s (+%10s)"
-          (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now)
+      sayString $ printf "%s #%02s new highscore:%14s (+%10s)"
+          (formatLogTime now)
           (show problemDesc.name)
           (showScore solutionDesc.score)
           (showScore $ sd.score - solutionDesc.score)
