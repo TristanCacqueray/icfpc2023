@@ -168,7 +168,7 @@ mainSolve ignoreSoln autoSubmit renderer params pid = do
       Nothing -> sayString $ show problemDesc.name <> ": couldn't find a solution!"
 
 mainRender :: ProblemID -> Maybe FilePath -> IO ()
-mainRender pid msolutionFP = withRenderer \renderer -> do
+mainRender pid msolutionFP = do
     problemDesc <- loadProblem pid
     let problem = problemDesc.problem
     solutionDesc <- getSolutionDesc False pid msolutionFP
@@ -181,7 +181,7 @@ mainRender pid msolutionFP = withRenderer \renderer -> do
     putStrLn $ "stagePos: " <> show problem.problemStageBottomLeft
     let score = scoreHappiness problemDesc solution
     putStrLn $ "Score: " <> showScore score
-    renderProblem problemDesc.problem solution renderer
+    directRender problemDesc.problem solution
 
 -- FIXME merge into check
 mainTest :: IO ()

@@ -43,44 +43,87 @@ winX, winY :: Int
 
 renderProblem :: MonadIO m => Problem -> Solution -> ProblemRenderer -> m ()
 renderProblem problem solution renderer = do
-    let scale
-            | problem.problemRoomHeight > problem.problemRoomWidth =
-                fromIntegral winY / fromIntegral problem.problemRoomHeight
-            | otherwise = fromIntegral winX / fromIntegral problem.problemRoomWidth
-        pscale = scale * 0.98
-    writeIORef renderer.pictureRef $ Just $ Scale pscale pscale $ drawProblem problem solution
+    writeIORef renderer.pictureRef $ Just $ windowScale problem $ drawProblem problem solution
     liftIO renderer.controller.controllerSetRedraw
 
 attendeeSize :: Float
 attendeeSize = 3
 
+directRender :: Problem -> Solution -> IO ()
+directRender problem solution = display disp bg picture
+  where
+    disp = InWindow "ICFP Contest 2023" winDim (10, 10)
+    winDim = (1024, 1024)
+    bg = greyN 0.6
+    picture = windowScale problem $ drawProblem problem solution
+
+windowScale :: Problem -> Picture -> Picture
+windowScale problem = Scale pscale pscale
+  where
+    scale
+        | problem.problemRoomHeight > problem.problemRoomWidth =
+            fromIntegral winY / fromIntegral problem.problemRoomHeight
+        | otherwise = fromIntegral winX / fromIntegral problem.problemRoomWidth
+    pscale = scale * 0.98
+
 drawProblem :: Problem -> Solution -> Picture
 drawProblem problem solution = Pictures (room : stage : (pillars <> musicians <> attendees))
   where
+    room :: Picture
     room =
         Color red $
-            rectangleWire (int2Float problem.problemRoomWidth) (int2Float problem.problemRoomHeight)
-    topX, topY :: Float
-    topX = -1 * fromIntegral problem.problemRoomWidth / 2
-    topY = fromIntegral problem.problemRoomHeight / 2
+            rectangleWire
+                (int2Float problem.problemRoomWidth)
+                (int2Float problem.problemRoomHeight)
 
-    pillars = map drawPillar problem.problemPillars
-    drawPillar (Pillar (px, py) radius) = Translate (topX + fromIntegral px) (topY - fromIntegral py) $ Color chartreuse $ Circle (fromIntegral radius)
+    toAbs :: Float -> Float -> Picture -> Picture
+    toAbs x y = Translate (topX + x) (topY - y)
+      where
+        topX, topY :: Float
+        topX = -1 * fromIntegral problem.problemRoomWidth / 2
+        topY = fromIntegral problem.problemRoomHeight / 2
 
-    musicians = V.toList $ V.imap drawMusician $ V.convert $ solution.solutionPlacements
-    drawMusician musician (x, y) =
-        let instrument = problem.problemMusicians UV.! (musician `mod` UV.length problem.problemMusicians)
-            allColor = [greyN 0.7, black, red, green, blue, yellow, cyan, magenta, rose, violet, azure, aquamarine, chartreuse, orange]
-            c = allColor !! (instrument `mod` length allColor)
-         in Translate (topX + fromIntegral x) (topY - fromIntegral y) $ Color c $ Circle 10
-
-    attendees = map drawAttendee problem.problemAttendees
-    drawAttendee attendee = Translate (topX + fromIntegral attendee.attendeeX) (topY - fromIntegral attendee.attendeeY) $ Circle attendeeSize
+    stage :: Picture
     stage =
-        Translate
-            (topX + int2Float problem.problemStageWidth / 2 + int2Float stageX)
-            (topY - int2Float problem.problemStageHeight / 2 - int2Float stageY)
+        toAbs
+            (stageWidth / 2 + int2Float stageX)
+            (stageHeight / 2 + int2Float stageY)
             $ Color orange
             $ Polygon
-            $ rectanglePath (int2Float problem.problemStageWidth) (int2Float problem.problemStageHeight)
-    (stageX, stageY) = problem.problemStageBottomLeft
+            $ rectanglePath stageWidth stageHeight
+      where
+        stageWidth = int2Float problem.problemStageWidth
+        stageHeight = int2Float problem.problemStageHeight
+        (stageX, stageY) = problem.problemStageBottomLeft
+
+    pillars :: [Picture]
+    pillars = map drawPillar problem.problemPillars
+    drawPillar (Pillar (px, py) radius) =
+        toAbs
+            (fromIntegral px)
+            (fromIntegral py)
+            $ Color chartreuse
+            $ Circle (fromIntegral radius)
+
+    musicians :: [Picture]
+    musicians = V.toList $ V.imap drawMusician $ V.convert $ solution.solutionPlacements
+    drawMusician musician (x, y) =
+        toAbs
+            (fromIntegral x)
+            (fromIntegral y)
+            $ Color musicianColor
+            $ Circle 10
+      where
+        instrument = problem.problemMusicians UV.! (musician `mod` UV.length problem.problemMusicians)
+        musicianColor = musicianColors !! (instrument `mod` length musicianColors)
+
+    attendees :: [Picture]
+    attendees = map drawAttendee problem.problemAttendees
+    drawAttendee :: Attendee -> Picture
+    drawAttendee attendee =
+        toAbs (fromIntegral attendee.attendeeX) (fromIntegral attendee.attendeeY) $
+            Circle 3
+
+musicianColors :: [Color]
+musicianColors =
+    [greyN 0.7, black, red, green, blue, yellow, cyan, magenta, rose, violet, azure, aquamarine, chartreuse, orange]
