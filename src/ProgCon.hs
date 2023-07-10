@@ -16,6 +16,7 @@ import ProgCon.Parser
 import ProgCon.Solve
 import ProgCon.Syntax
 import ProgCon.Submit
+import ProgCon.Utils
 import Data.List (sortOn)
 import Text.Printf (printf)
 import Data.Time (UTCTime, nominalDiffTimeToSeconds)
