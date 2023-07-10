@@ -50,7 +50,6 @@ userBoard = do
   case mobj of
     Nothing -> putStrLn "failed to get userboard"
     Just obj -> do
-      -- FIXME combine with problems again
       case lookupKey "Success" obj >>= lookupKey "problems" of
         Just (scores :: [Maybe Int]) ->
           mapM_ renderScore (zip [(1::Int)..] scores)
