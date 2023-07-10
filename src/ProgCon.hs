@@ -215,6 +215,8 @@ mainDriver maxTime = withScheduler_ Par \scheduler -> do
 
   now <- getCurrentTime
   let solutionsOrdered =
+        -- Focus on the first few problems
+        take 20 $
         -- Start from the biggest/recent one
         reverse solutions
         -- Start from the smallest/oldest
@@ -241,13 +243,13 @@ mainImprove maxTime problemDesc initial_time start_time solutionDesc idx = do
   (newTime, newSolution) <- case mSolution of
     Nothing -> pure (start_time, solutionDesc)
     Just sd -> liftIO do
+      saveSolutionPath sd (solutionPath problemDesc.name)
       now <- getCurrentTime
-      sayString $ printf "%s problem-%02s: new highscore! %13s (+%d)"
+      sayString $ printf "%s problem-%02s: new highscore! %15s (+%10s)"
           (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now)
           (show problemDesc.name)
           (showScore solutionDesc.score)
-          (sd.score - solutionDesc.score)
-      saveSolutionPath sd (solutionPath problemDesc.name)
+          (showScore $ sd.score - solutionDesc.score)
       pure (now, sd)
 
   end_time <- liftIO getCurrentTime
