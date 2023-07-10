@@ -93,4 +93,5 @@ library
                      , ProgCon.Solve
                      , ProgCon.Submit
                      , ProgCon.Syntax
+                     , ProgCon.Utils
   hs-source-dirs:      src

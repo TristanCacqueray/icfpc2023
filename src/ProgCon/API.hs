@@ -10,7 +10,7 @@ import Network.HTTP.Simple
 import Network.HTTP.Types
 import System.Environment
 
-import ProgCon.Eval (showScore)
+import ProgCon.Utils (logLn, showScore)
 
 apiServer :: String
 apiServer = "https://api.icfpcontest.com"
@@ -33,7 +33,7 @@ accessAPI method params settings expected = do
 retryGET :: IO (Response a) -> IO (Response a)
 retryGET act =
   recoverAll retrypolicy $ \rs ->
-  when (rsIterNumber rs > 0) (putChar '.') >> act
+  when (rsIterNumber rs > 0) (logLn "retrying") >> act
  where
     retrypolicy = exponentialBackoff 750_000 <> limitRetries 10
 

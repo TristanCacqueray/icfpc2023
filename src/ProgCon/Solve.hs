@@ -19,14 +19,15 @@ import VectorShuffling.Mutable (shuffle)
 import Control.Concurrent
 import Control.Monad.ST (stToIO)
 import Data.List (sortOn)
-import Data.Time.Format
-import Data.Time.LocalTime
+import Data.Time.LocalTime (getZonedTime)
+
 import ProgCon.Eval
 import ProgCon.GUI
 import ProgCon.Parser (saveSolutionPath)
 import ProgCon.Syntax
 import Say
 import Text.Printf (printf)
+import ProgCon.Utils
 
 -- import RIO (replicateConcurrently)
 
@@ -226,7 +227,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
 
         liftIO do
             now <- getZonedTime
-            sayString $ printf "%s %s: gen %4d / %d score %s (since %d)" (formatTime defaultTimeLocale (timeFmt defaultTimeLocale) now) ('#' : show problemDesc.name) (params.genCount - count + 1) params.genCount (showScore best) newLastHighscore
+            sayString $ printf "%s %s: gen %4d / %d score %s (since %d)" (formatLogTime now) ('#' : show problemDesc.name) (params.genCount - count + 1) params.genCount (showScore best) newLastHighscore
 
         -- Repeat the process, keeping only the best seed.
         go newLastHighscore (count - 1) (take params.seedCount populationOrdered)
