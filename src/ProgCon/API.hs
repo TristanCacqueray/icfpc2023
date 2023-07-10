@@ -33,14 +33,14 @@ accessAPI method params settings expected = do
 retryGET :: IO (Response a) -> IO (Response a)
 retryGET act =
   recoverAll retrypolicy $ \rs ->
-  when (rsIterNumber rs > 0) (logLn "retrying") >> act
+  when (rsIterNumber rs > 0) (logLn "retrying GET") >> act
  where
     retrypolicy = exponentialBackoff 750_000 <> limitRetries 10
 
 retryPOST :: IO (Response a) -> IO (Response a)
 retryPOST act =
   recoverAll retrypolicy $ \rs ->
-  when (rsIterNumber rs > 0) (putChar '.') >> act
+  when (rsIterNumber rs > 0) (logLn "retrying POST") >> act
  where
     retrypolicy = exponentialBackoff 5_000_000 <> limitRetries 3
 
