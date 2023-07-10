@@ -14,7 +14,6 @@ import Network.HTTP.Types.Status (statusCode)
 import System.Directory (doesFileExist)
 import System.Environment
 import SimpleCmd.Git qualified
---import System.Time.Extra (sleep)
 
 import ProgCon.API (retryGET, retryPOST)
 import ProgCon.Parser (loadSolutionPath)
