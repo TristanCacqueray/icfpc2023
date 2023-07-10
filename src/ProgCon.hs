@@ -146,7 +146,7 @@ mainSolve ignoreSoln autoSubmit renderer params pid = do
       show (UV.length problemDesc.problem.problemMusicians) <> " musicians, " <>
       show (UV.length problemDesc.pillars) <> " pillars, " <>
       show (length problemDesc.problem.problemAttendees) <> " attendees) " <>
-            "params: " <> show params
+      showParams params
 
     let prevScore = case mPrevSolution of
           Nothing -> minBound

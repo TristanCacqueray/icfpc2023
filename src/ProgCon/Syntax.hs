@@ -30,7 +30,10 @@ data Params = Params
     , volumeCount :: Int
     , placementCount :: Int
     }
-    deriving (Show)
+
+showParams :: Params -> String
+showParams (Params seed breed gen volume placement) =
+  "seed:" <> show seed <> " breed:" <> show breed <> " gen:" <> show gen <> " volume:" <> show volume <> " placement:" <> show placement
 
 data ProblemDescription = ProblemDescription
     { name :: ProblemID
