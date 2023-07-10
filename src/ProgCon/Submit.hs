@@ -75,9 +75,6 @@ waitFor pid sid = do
                 BS.putStr "\n"
                 BS.putStr $ BS.take 141 resp
                 BS.putStr "\n"
-                putStrLn =<< SimpleCmd.Git.git "add" [solutionPath pid]
-                putStrLn =<< SimpleCmd.Git.git "commit" ["-m", "New solution for " <> show pid]
-                putStrLn =<< SimpleCmd.Git.git "push" ["origin", "HEAD:tristan-driver"]
             | otherwise -> do
                 BS.putStr "\n"
                 BS.putStr "!! FAILURE: "
@@ -92,9 +89,13 @@ submitOne lenient resubmit pid = do
         else do
             putStrLn $ "Submitting #" <> show pid
             solutionDesc <- loadSolutionPath solutionFP
+            SimpleCmd.Git.git_ "add" [solutionFP]
             solution <- fromSolutionDesc solutionDesc
             submit resubmit pid solution >>= \case
-                Just sid -> print sid >> putStr "Processing" >> waitFor pid sid
+                Just sid -> do
+                  print sid >> putStr "Processing" >> waitFor pid sid
+                  SimpleCmd.Git.git_ "commit" ["-m", "updated solution for " <> show pid, solutionFP]
+                  -- SimpleCmd.Git.git_ "push" ["origin", "HEAD:tristan-driver"]
                 Nothing -> pure ()
   where
     solutionFP :: FilePath
