@@ -10,23 +10,22 @@ module ProgCon.Solve (
     Improvement(..),
 ) where
 
-import Control.Monad.Random.Strict
-import Data.Vector qualified as V
-import Data.Vector.Mutable qualified as MV
-import Data.Vector.Unboxed qualified as UV
-import VectorShuffling.Mutable (shuffle)
-
 import Control.Concurrent
+import Control.Monad.Random.Strict
 import Control.Monad.ST (stToIO)
 import Data.List (sortOn)
 import Data.Time.LocalTime (getZonedTime)
+import Data.Vector qualified as V
+import Data.Vector.Mutable qualified as MV
+import Data.Vector.Unboxed qualified as UV
+import Say
+import Text.Printf (printf)
+import VectorShuffling.Mutable (shuffle)
 
 import ProgCon.Eval
 import ProgCon.GUI
 import ProgCon.Parser (saveSolutionPath)
 import ProgCon.Syntax
-import Say
-import Text.Printf (printf)
 import ProgCon.Utils
 
 -- import RIO (replicateConcurrently)
