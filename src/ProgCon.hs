@@ -222,13 +222,13 @@ mainDriver maxTime = withScheduler_ Par \scheduler -> do
   now <- getCurrentTime
   let solutionsOrdered =
         -- Focus on the first few problems
-        take 20 $
+        take 12 $
         -- Start from the biggest/recent one
         reverse solutions
         -- Start from the smallest/oldest
         -- solution
 
-  forM_ solutionsOrdered \(pid, time, solution) -> scheduleWork_ scheduler do
+  forM_ (take 128 $ cycle solutionsOrdered) \(pid, time, solution) -> scheduleWork_ scheduler do
     let
       ageSec :: Integer
       ageSec = truncate (nominalDiffTimeToSeconds $ diffUTCTime now time) `div` 60
