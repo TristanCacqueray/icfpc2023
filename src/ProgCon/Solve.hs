@@ -7,7 +7,7 @@ module ProgCon.Solve (
     runRandGen,
     tryImprove,
     RandGen,
-    Improvement(..),
+    Improvement (..),
 ) where
 
 import Control.Concurrent
@@ -35,27 +35,25 @@ solve = geneticSolve
 
 type RandGen a = RandT StdGen IO a
 
-type Grid = Int
-
 -- | Arranging the musicians in a grid, this function returns all the available placements.
-allGridPlacement :: (Grid, Grid) -> UV.Vector (Grid, Grid)
+allGridPlacement :: (Int, Int) -> UV.Vector (Int, Int)
 allGridPlacement (width, height) = UV.fromList $ go radius radius []
   where
     -- go takes the current (x, y) position, and the list of accumulated position
-    go :: Grid -> Grid -> [(Grid, Grid)] -> [(Grid, Grid)]
-    go x y !acc =
-        let -- store the current pos in the accumulator
-            newAcc = (x, y) : acc
-         in if
-                    | -- there is room to fit another musician on this line, keep the y pos
-                      x + nextMusician < width ->
-                        go (x + diameter) y newAcc
-                    | -- there is room to start another line, reset the x pos
-                      y + nextMusician < height ->
-                        go radius (y + diameter) newAcc
-                    | -- this is the end
-                      otherwise ->
-                        newAcc
+    go :: Int -> Int -> [(Int, Int)] -> [(Int, Int)]
+    go x y !acc
+        | -- there is room to fit another musician on this line, keep the y pos
+          x + nextMusician < width =
+            go (x + diameter) y newAcc
+        | -- there is room to start another line, reset the x pos
+          y + nextMusician < height =
+            go radius (y + diameter) newAcc
+        | -- this is the end
+          otherwise =
+            newAcc
+      where
+        -- store the current pos in the accumulator
+        newAcc = (x, y) : acc
 
 -- | Placement dimension: ( -r- o -r- )
 radius, diameter :: Int
@@ -69,7 +67,7 @@ nextMusician :: Int
 nextMusician = radius + diameter
 
 -- | Arranging the musicians in a grid, this function returns all the available placements.
-allPackedPlacement :: (Grid, Grid) -> UV.Vector (Grid, Grid)
+allPackedPlacement :: (Int, Int) -> UV.Vector (Int, Int)
 allPackedPlacement (width, height) = UV.fromList $ go 0 radius radius []
   where
     go
@@ -80,45 +78,43 @@ allPackedPlacement (width, height) = UV.fromList $ go 0 radius radius []
           otherwise =
             goCol
 
-    goLine :: Int -> Grid -> Grid -> [(Grid, Grid)] -> [(Grid, Grid)]
-    goLine line x y !acc =
-        let newAcc = (x, y) : acc
-            -- we alternate the start position every two lines
-            newX
-                | even line = diameter
-                | otherwise = radius
-         in if
-                    | -- there is room to fit another musician on this line
-                      x + nextMusician < width ->
-                        goLine line (x + diameter) y newAcc
-                    | -- there is room to start another line
-                      y + nextMusician < height ->
-                        goLine (line + 1) newX (y + newOffset) newAcc
-                    | -- this is the end
-                      otherwise ->
-                        newAcc
-
-    goCol :: Int -> Grid -> Grid -> [(Grid, Grid)] -> [(Grid, Grid)]
-    goCol col x y !acc =
-        let newAcc = (x, y) : acc
-            -- we alternate the start position every two columns
-            newY
-                | even col = diameter
-                | otherwise = radius
-         in if
-                    | -- there is room to fit another musician on this column
-                      y + nextMusician < height ->
-                        goCol col x (y + diameter) newAcc
-                    | -- there is room to start another column
-                      x + nextMusician < width ->
-                        goCol (col + 1) (x + newOffset) newY newAcc
-                    | -- this is the end
-                      otherwise ->
-                        newAcc
-
+    goLine :: Int -> Int -> Int -> [(Int, Int)] -> [(Int, Int)]
+    goLine line x y !acc
+        | -- there is room to fit another musician on this line
+          x + nextMusician < width =
+            goLine line (x + diameter) y newAcc
+        | -- there is room to start another line
+          y + nextMusician < height =
+            goLine (line + 1) newX (y + newOffset) newAcc
+        | -- this is the end
+          otherwise =
+            newAcc
+      where
+        newAcc = (x, y) : acc
+        -- we alternate the start position every two lines
+        newX
+            | even line = diameter
+            | otherwise = radius
+    goCol :: Int -> Int -> Int -> [(Int, Int)] -> [(Int, Int)]
+    goCol col x y !acc
+        | -- there is room to fit another musician on this column
+          y + nextMusician < height =
+            goCol col x (y + diameter) newAcc
+        | -- there is room to start another column
+          x + nextMusician < width =
+            goCol (col + 1) (x + newOffset) newY newAcc
+        | -- this is the end
+          otherwise =
+            newAcc
+      where
+        newAcc = (x, y) : acc
+        -- we alternate the start position every two columns
+        newY
+            | even col = diameter
+            | otherwise = radius
     newOffset = 19
 
-maximumPlacements :: Problem -> UV.Vector (Grid, Grid)
+maximumPlacements :: Problem -> UV.Vector (Int, Int)
 maximumPlacements problem =
     let best
             | UV.length packed > UV.length grid = packed
@@ -129,49 +125,50 @@ maximumPlacements problem =
     packed = allPackedPlacement dim
     grid = allGridPlacement dim
 
-    toAbsPlacement :: (Grid, Grid) -> (Grid, Grid)
+    toAbsPlacement :: (Int, Int) -> (Int, Int)
     toAbsPlacement (x, y) = (sx + x, sy + y)
     (sx, sy) = problem.problemStageBottomLeft
 
 data Improvement = Placement | Volume | Both
-  deriving (Enum, Bounded, Show)
+    deriving (Enum, Bounded, Show)
 
 -- | This function simply try to improve a given solution by applying a single improvement
 tryImprove :: ProblemDescription -> SolutionDescription -> Improvement -> RandGen (Maybe SolutionDescription)
 tryImprove problemDesc sd improvement = do
     newSolution <- case improvement of
-      Placement -> do
-        genPlacements <- newPlacements
-        pure $ sd{genPlacements}
-      Volume -> do
-        genVolumes <- newVolumes
-        pure $ sd{genVolumes}
-      Both -> do
-        genPlacements <- newPlacements
-        genVolumes <- newVolumes
-        pure $ sd{genPlacements, genVolumes}
+        Placement -> do
+            genPlacements <- newPlacements
+            pure $ sd{genPlacements}
+        Volume -> do
+            genVolumes <- newVolumes
+            pure $ sd{genVolumes}
+        Both -> do
+            genPlacements <- newPlacements
+            genVolumes <- newVolumes
+            pure $ sd{genPlacements, genVolumes}
 
     score <- scoreSolution problemDesc newSolution.genPlacements newSolution.genVolumes
-    pure $ if score > sd.score
-      then Just (newSolution{score})
-      else Nothing
+    pure $
+        if score > sd.score
+            then Just (newSolution{score})
+            else Nothing
   where
     musicianCount = UV.length problemDesc.problem.problemMusicians
     newPlacements = do
-      -- Copy the previous placements and do one swap
-      iov <- MV.clone sd.genPlacements.iov
-      musician <- getRandomR (0, musicianCount - 1)
-      swapPos <- getRandomR (0, MV.length iov - 1)
-      MV.swap iov musician swapPos
-      pure $ GenPlacements iov
+        -- Copy the previous placements and do one swap
+        iov <- MV.clone sd.genPlacements.iov
+        musician <- getRandomR (0, musicianCount - 1)
+        swapPos <- getRandomR (0, MV.length iov - 1)
+        MV.swap iov musician swapPos
+        pure $ GenPlacements iov
     newVolumes = do
-      -- Copy the previous volumes and do one change
-      iov <- MV.clone sd.genVolumes
-      musician <- getRandomR (0, musicianCount - 1)
-      volume <- getRandomR (0, 10)
-      -- TODO: to a relative increase of the current volume?
-      MV.write iov musician volume
-      pure iov
+        -- Copy the previous volumes and do one change
+        iov <- MV.clone sd.genVolumes
+        musician <- getRandomR (0, musicianCount - 1)
+        volume <- getRandomR (0, 10)
+        -- TODO: to a relative increase of the current volume?
+        MV.write iov musician volume
+        pure iov
 
 geneticSolve :: Params -> Maybe ProblemRenderer -> Maybe SolutionDescription -> ProblemDescription -> IO (Maybe SolutionDescription)
 geneticSolve params mRenderer mPrevSolution problemDesc
@@ -196,40 +193,40 @@ geneticSolve params mRenderer mPrevSolution problemDesc
 
     go :: Int -> Int -> [SolutionDescription] -> RandGen [SolutionDescription]
     go lastHighscoreAge count !seeds
-      | lastHighscoreAge > min params.genCount 20 && count <= 0 = pure seeds
-      | otherwise = do
-        -- Generate a new population
-        population <- concat <$> traverse breedNewSolutions seeds
+        | lastHighscoreAge > min params.genCount 20 && count <= 0 = pure seeds
+        | otherwise = do
+            -- Generate a new population
+            population <- concat <$> traverse breedNewSolutions seeds
 
-        -- Order by score
-        let populationOrdered = sortOn (\sd -> negate sd.score) population
-        let prevScore = case seeds of
-                sd : _ -> sd.score
-                _ -> minBound
-        (newHighScore, best) <- case populationOrdered of
-            sd : _ -> do
-                when (sd.score > prevScore) do
-                    sayString $ '#' : show problemDesc.name <> ": saving new highscore: " <> showScore sd.score
-                    liftIO $ saveSolutionPath sd (solutionPath problemDesc.name)
-                    forM_ mRenderer \renderer -> liftIO do
-                        solution <- toSolution musicianCount sd.genPlacements sd.genVolumes
-                        renderProblem problem solution renderer
-                        -- FIX: without this delay, the gloss ui is not refreshing :/
-                        liftIO $ threadDelay 1_000_000
+            -- Order by score
+            let populationOrdered = sortOn (\sd -> negate sd.score) population
+            let prevScore = case seeds of
+                    sd : _ -> sd.score
+                    _ -> minBound
+            (newHighScore, best) <- case populationOrdered of
+                sd : _ -> do
+                    when (sd.score > prevScore) do
+                        sayString $ '#' : show problemDesc.name <> ": saving new highscore: " <> showScore sd.score
+                        liftIO $ saveSolutionPath sd (solutionPath problemDesc.name)
+                        forM_ mRenderer \renderer -> liftIO do
+                            solution <- toSolution musicianCount sd.genPlacements sd.genVolumes
+                            renderProblem problem solution renderer
+                            -- FIX: without this delay, the gloss ui is not refreshing :/
+                            liftIO $ threadDelay 1_000_000
 
-                pure (sd.score > prevScore, sd.score)
-            _ -> pure (False, minBound)
+                    pure (sd.score > prevScore, sd.score)
+                _ -> pure (False, minBound)
 
-        let newLastHighscore
-              | newHighScore = 0
-              | otherwise = lastHighscoreAge + 1
+            let newLastHighscore
+                    | newHighScore = 0
+                    | otherwise = lastHighscoreAge + 1
 
-        liftIO do
-            now <- getZonedTime
-            sayString $ printf "%s %s: gen %4d / %d score %s (since %d)" (formatLogTime now) ('#' : show problemDesc.name) (params.genCount - count + 1) params.genCount (showScore best) newLastHighscore
+            liftIO do
+                now <- getZonedTime
+                sayString $ printf "%s %s: gen %4d / %d score %s (since %d)" (formatLogTime now) ('#' : show problemDesc.name) (params.genCount - count + 1) params.genCount (showScore best) newLastHighscore
 
-        -- Repeat the process, keeping only the best seed.
-        go newLastHighscore (count - 1) (take params.seedCount populationOrdered)
+            -- Repeat the process, keeping only the best seed.
+            go newLastHighscore (count - 1) (take params.seedCount populationOrdered)
       where
         breedNewSolutions :: SolutionDescription -> RandGen [SolutionDescription]
         breedNewSolutions sd = do
@@ -267,7 +264,7 @@ geneticSolve params mRenderer mPrevSolution problemDesc
                 MV.swap iov musician swapPos
 
 -- | Create a random solution.
-randomSolution :: ProblemDescription -> UV.Vector (Grid, Grid) -> RandGen SolutionDescription
+randomSolution :: ProblemDescription -> UV.Vector (Int, Int) -> RandGen SolutionDescription
 randomSolution problemDesc placements = do
     iov <- V.thaw (V.convert placements)
     liftRandT \stdg -> do
