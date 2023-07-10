@@ -5,7 +5,6 @@ import Control.Concurrent (forkIO)
 import Data.List.Extra (groupSortOn)
 import Data.Vector.Unboxed qualified as UV
 import Say
-import Data.Time.Format
 import SimpleCmdArgs
 import System.Directory (doesFileExist)
 
