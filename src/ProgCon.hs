@@ -216,7 +216,7 @@ mainDriver maxTime = withScheduler_ Par \scheduler -> do
   now <- getCurrentTime
   let solutionsOrdered =
         -- Focus on the first few problems
-        take 20 $
+        take 24 $
         -- Start from the biggest/recent one
         reverse solutions
         -- Start from the smallest/oldest
