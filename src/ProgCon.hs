@@ -237,11 +237,14 @@ mainDriver maxTime = withScheduler_ Par \scheduler -> do
       when improved do
         void $ forkIO $ submitOne False True pid
 
+-- | This function call 'tryImprove' repeatedly. It returns True on success.
 mainImprove :: Int -> ProblemDescription -> UTCTime -> UTCTime -> SolutionDescription -> Int -> RandGen Bool
 mainImprove maxTime problemDesc initial_time start_time solutionDesc idx = do
+  -- maybe get a new solution
   mSolution <- tryImprove problemDesc solutionDesc (toEnum (idx `mod` 3))
+
   (newTime, newSolution) <- case mSolution of
-    Nothing -> pure (start_time, solutionDesc)
+    Nothing -> pure (start_time, solutionDesc) -- no improvement
     Just sd -> liftIO do
       saveSolutionPath sd (solutionPath problemDesc.name)
       now <- getCurrentTime
@@ -252,11 +255,13 @@ mainImprove maxTime problemDesc initial_time start_time solutionDesc idx = do
           (showScore $ sd.score - solutionDesc.score)
       pure (now, sd)
 
+  -- check how long we ran sinch the last improvement
   end_time <- liftIO getCurrentTime
   let elapsed = nominalDiffTimeToSeconds (diffUTCTime end_time start_time)
+      hasImproved = initial_time /= start_time -- start_time is increased by improvements
   if elapsed < fromIntegral maxTime
     then mainImprove maxTime problemDesc initial_time newTime newSolution (idx + 1)
-    else pure $ initial_time /= start_time
+    else pure hasImproved
 
 sortProblem :: _ -> IO [(ProblemID, UTCTime, SolutionDescription)]
 sortProblem doSort = do
