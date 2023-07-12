@@ -1,5 +1,7 @@
 # JKRT-2023
 
+> Checkout the companion blog post: https://tristancacqueray.github.io/blog/icfpc2023
+
 Run the tool `cabal run -O2 progcon -- --help`
 
 ## Usage
